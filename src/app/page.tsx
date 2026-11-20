@@ -14,12 +14,14 @@ const navigation = [
   { label: "Demandes support", icon: LifeBuoy, count: "8" },
   { label: "Générateur IA", icon: WandSparkles, section: "OUTILS" },
   { label: "Clients", icon: Building2 },
+  { label: "Portails clients", icon: ShieldCheck },
   { label: "Interventions", icon: BriefcaseBusiness },
   { label: "Contrats & heures", icon: FileText },
   { label: "Parc informatique", icon: HardDrive, section: "GESTION" },
   { label: "Calendrier", icon: CalendarDays },
   { label: "Équipe BN2", icon: Users },
   { label: "Documents", icon: FileText },
+  { label: "Hébergement", icon: HardDrive, section: "PLATEFORME" },
   { label: "Paramètres", icon: Settings2, section: "CONFIGURATION" },
 ];
 
