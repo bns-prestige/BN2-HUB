@@ -20,8 +20,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  if(findError||!ticket)return NextResponse.json({error:"ticket_not_found"},{status:404});
  let body:Record<string,unknown>;
  try{body=await request.json();}catch{return NextResponse.json({error:"invalid_json"},{status:400});}
- const update:Record<string,unknown>={};
- if(typeof body.status==="string"&&["new","waiting_bn2","in_progress","waiting_customer","resolved","closed"].includes(body.status))update.status=body.status;
+ const update:{status?:"new"|"waiting_bn2"|"in_progress"|"waiting_customer"|"resolved"|"closed";assigned_to?:string|null}={};
+ if(typeof body.status==="string"&&["new","waiting_bn2","in_progress","waiting_customer","resolved","closed"].includes(body.status))update.status=body.status as NonNullable<typeof update.status>;
  if(typeof body.assignedTo==="string"){
   if(body.assignedTo){
    const {data:assignee}=await supabase.from("staff_members").select("user_id").eq("user_id",body.assignedTo).in("employment_status",["invited","active"]).maybeSingle();
