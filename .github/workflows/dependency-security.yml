@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   audit-and-remediate:
@@ -32,20 +31,18 @@ jobs:
         run: |
           npm audit --json > npm-audit-report.json || true
           node -e "const a=require('./npm-audit-report.json'); const v=a.metadata?.vulnerabilities||{}; console.log('Dependency audit: '+JSON.stringify(v));"
-      - name: Open pull request with lockfile and safe updates
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ github.token }}
-          branch: chore/dependency-security-remediation
-          delete-branch: true
-          title: "chore: remediate npm dependency vulnerabilities"
-          commit-message: "chore: update npm dependency lockfile"
-          body: |
-            Automated dependency maintenance.
-
-            - Generated a reproducible npm lockfile.
-            - Applied non-breaking fixes with `npm audit fix` (no `--force`).
-            - CI will validate lint, TypeScript, and production build before merge.
-          add-paths: |
-            package-lock.json
-            package.json
+      - name: Update the existing remediation branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git stash push --include-untracked --message dependency-audit-changes
+          git checkout -B chore/dependency-security-remediation origin/main
+          git stash pop
+          git add package-lock.json package.json
+          if git diff --cached --quiet; then
+            echo "No dependency changes to publish."
+            exit 0
+          fi
+          git commit -m "chore: update dependency lockfile"
+          git push --force origin HEAD:refs/heads/chore/dependency-security-remediation
