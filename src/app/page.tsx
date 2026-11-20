@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminSectionView from "@/components/admin-section-view";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, BriefcaseBusiness, Building2,
@@ -41,6 +42,7 @@ export default function AdminHome() {
   const [stats, setStats] = useState<DashboardStats>({ clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 });
   const [dataLoaded, setDataLoaded] = useState(false);
   useEffect(() => { fetch("/api/admin/overview", { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error("Chargement impossible"); return response.json(); }).then((data) => { setTickets(data.tickets ?? []); setClients(data.clients ?? []); setStats(data.stats ?? { clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 }); setDataLoaded(true); }).catch(() => setDataLoaded(false)); }, []);
+  async function signOut() { await createClient().auth.signOut(); window.location.assign("/login"); }
   const filteredTickets = useMemo(() => tickets.filter((ticket) =>
     [ticket.id, ticket.subject, ticket.client, ticket.type].join(" ").toLowerCase().includes(query.toLowerCase())
   ), [query]);
@@ -67,7 +69,7 @@ export default function AdminHome() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-help"><div className="help-icon"><CircleHelp size={17}/></div><strong>Besoin d&apos;un coup de main ?</strong><p>Retrouvez les informations utiles pour gérer votre plateforme.</p><button onClick={() => setActive("Centre d'aide")}>Centre d&apos;aide <ChevronRight size={14}/></button></div>
-          <div className="admin-user"><div className="user-avatar">NS</div><div className="user-info"><strong>Administrateur BN2</strong><span>Accès propriétaire</span></div><button aria-label="Options du compte"><ChevronDown size={15}/></button></div>
+          <div className="admin-user"><div className="user-avatar">NS</div><div className="user-info"><strong>Administrateur BN2</strong><span>Accès propriétaire</span></div><button onClick={signOut} aria-label="Se déconnecter"><ChevronDown size={15}/></button></div>
         </div>
       </aside>
 
