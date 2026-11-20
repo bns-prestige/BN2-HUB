@@ -67,19 +67,17 @@ export default function ClientAssistantPage() {
   }
 
   useEffect(() => {
-    let active=true;
     async function initialise() {
       try {
         const list=await refreshConversations();
-        if (!active) return;
         if (list[0]) await openConversation(list[0].id);
         else await createConversation();
       } catch (cause) {
-        if (active) { setErrorMessage(cause instanceof Error ? cause.message : "Connexion impossible."); setLoading(false); }
+        setErrorMessage(cause instanceof Error ? cause.message : "Connexion impossible.");
+        setLoading(false);
       }
     }
     void initialise();
-    return () => { active=false; };
   }, []);
 
   useEffect(() => {
