@@ -331,3 +331,39 @@ input:focus,select:focus,textarea:focus { border-color: var(--bn2-accent) !impor
 @media(prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Small interaction details and readable feedback states */
+.bn2-dashboard-alert {
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  margin:0 0 14px; padding:11px 13px; border:1px solid rgba(207,104,104,.24);
+  border-radius:10px; background:rgba(255,245,245,.78); color:#a84d4d; font-size:10px;
+}
+.bn2-dashboard-alert button {
+  border:1px solid rgba(207,104,104,.24); border-radius:8px; padding:6px 9px;
+  background:rgba(255,255,255,.7); color:inherit; font-size:9px; font-weight:800;
+}
+.bn2-notification-item {
+  display:flex; width:100%; gap:9px; padding:10px 3px; text-align:left;
+  border:0; border-top:1px solid var(--bn2-line); background:transparent; color:var(--bn2-ink);
+}
+.bn2-notification-item:hover { background:rgba(81,128,220,.06); }
+.bn2-notification-item>span:last-child { display:grid; gap:4px; min-width:0; }
+.bn2-notification-item b { font-size:10px; color:var(--bn2-ink); }
+.bn2-notification-item small { font-size:9px; line-height:1.45; color:var(--bn2-muted); }
+.admin-user button:hover { color:var(--bn2-accent); }
+.admin-metric { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.admin-metric:hover { transform: translateY(-2px); border-color:rgba(91,137,222,.32); box-shadow:0 18px 45px rgba(31,52,84,.1); }
+.admin-nav-item:active,.admin-primary-button:active,.client-primary:active { transform:scale(.985); }
+.requests-table tr:last-child td { border-bottom:0; }
+.activity-panel { margin-top:12px; }
+.bn2-login-card,.bn2-assistant-layout,.admin-panel,.admin-metric,.client-hero,.bn2-staff-panel {
+  animation: bn2-surface-in .36s ease both;
+}
+@keyframes bn2-surface-in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-reduced-motion:reduce) { .bn2-login-card,.bn2-assistant-layout,.admin-panel,.admin-metric,.client-hero,.bn2-staff-panel { animation:none; } }
+@media(prefers-color-scheme:dark) {
+  .bn2-dashboard-alert { background:rgba(112,42,49,.18); border-color:rgba(230,119,126,.22); color:#ffb5b7; }
+  .bn2-dashboard-alert button { background:rgba(255,255,255,.04); border-color:rgba(230,119,126,.22); }
+  .bn2-notification-item b { color:var(--bn2-ink); }
+  .bn2-notification-item:hover { background:rgba(130,170,255,.08); }
+}
