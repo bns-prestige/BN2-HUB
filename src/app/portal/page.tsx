@@ -5,7 +5,7 @@ import "./portal.css";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ArrowRight, Bell, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3,
+  ArrowRight, Bell, BookOpen, Bot, CheckCircle2, ChevronDown, ChevronRight, Clock3,
   FileText, HelpCircle, Home, LifeBuoy, LogOut, Menu, Monitor, Network,
   Plus, Search, Send, ShieldCheck, Smartphone, Wifi, X,
 } from "lucide-react";
@@ -128,6 +128,7 @@ export default function ClientPortalPage() {
     { label: "Nouvelle demande", icon: Plus },
     { label: "Parc informatique", icon: Monitor },
     { label: "Guides & aide", icon: BookOpen },
+    { label: "Assistant IA", icon: Bot },
   ];
 
   return (
@@ -137,7 +138,7 @@ export default function ClientPortalPage() {
         <div className="client-org-switch"><div className="client-org-avatar">{organizationName.split(/\\s+/).map((part) => part[0]).join("").slice(0,2).toUpperCase()}</div><div><strong>{organizationName}</strong><small>Portail entreprise</small></div><ChevronDown size={15}/></div>
         <div className="client-nav-label">ESPACE CLIENT</div>
         <nav className="client-nav" aria-label="Navigation du portail client">
-          {nav.map((item) => { const Icon = item.icon; return <button key={item.label} className={section === item.label ? "active" : ""} onClick={() => {setSection(item.label);setMobileMenu(false);setSuccess("");}}><Icon size={17}/><span>{item.label}</span>{item.count && <small>{item.count}</small>}</button>; })}
+          {nav.map((item) => { const Icon = item.icon; return <button key={item.label} className={section === item.label ? "active" : ""} onClick={() => {if(item.label==="Assistant IA"){window.location.assign("/portal/assistant");return;}setSection(item.label);setMobileMenu(false);setSuccess("");}}><Icon size={17}/><span>{item.label}</span>{item.count && <small>{item.count}</small>}</button>; })}
         </nav>
         <div className="client-sidebar-bottom"><div className="client-help-card"><div className="client-help-icon"><HelpCircle size={17}/></div><strong>Besoin d&apos;aide ?</strong><p>Notre équipe informatique est là pour vous accompagner.</p><button onClick={() => setSection("Nouvelle demande")}>Contacter BN2 <ArrowRight size={14}/></button></div><div className="client-profile"><div className="client-profile-avatar">{profileName.split(/\\s+/).map((part) => part[0]).join("").slice(0,2).toUpperCase()}</div><div><strong>{profileName}</strong><small>{profileRole}</small></div><button onClick={signOut} aria-label="Se déconnecter"><LogOut size={15}/></button></div></div>
       </aside>
