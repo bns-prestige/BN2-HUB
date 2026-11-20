@@ -25,7 +25,7 @@ export async function GET() {
   const clients = (orgs.data ?? []).map((org) => ({
     id: org.id,
     name: org.name,
-    initials: org.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    initials: org.name.split(/\s+/).map((part: string) => part[0]).join("").slice(0, 2).toUpperCase(),
     plan: org.status === "active" ? "Client actif" : "Configuration",
     tickets: 0,
     color: "lavender",
