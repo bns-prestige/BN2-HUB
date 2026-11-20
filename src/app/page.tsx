@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminSectionView from "@/components/admin-section-view";
 import Link from "next/link";
 import {
@@ -12,7 +12,7 @@ import {
 
 const navigation = [
   { label: "Vue d'ensemble", icon: LayoutDashboard, section: "PRINCIPAL" },
-  { label: "Demandes support", icon: LifeBuoy, count: "8" },
+  { label: "Demandes support", icon: LifeBuoy, count: "" },
   { label: "Générateur IA", icon: WandSparkles, section: "OUTILS" },
   { label: "Clients", icon: Building2 },
   { label: "Portails clients", icon: ShieldCheck },
@@ -26,18 +26,9 @@ const navigation = [
   { label: "Paramètres", icon: Settings2, section: "CONFIGURATION" },
 ];
 
-const tickets = [
-  { id: "BN2-2026-0042", subject: "Accès à la boîte mail partagée", client: "Atelier Nova", type: "Microsoft 365", priority: "Haute", status: "Nouvelle", time: "09:42" },
-  { id: "BN2-2026-0041", subject: "Configuration du nouvel ordinateur", client: "Groupe Horizon", type: "Matériel", priority: "Normale", status: "En cours", time: "Hier" },
-  { id: "BN2-2026-0040", subject: "Ajout d'un utilisateur", client: "Cabinet Dewael", type: "Comptes & accès", priority: "Normale", status: "À vérifier", time: "Hier" },
-  { id: "BN2-2026-0039", subject: "Problème de connexion VPN", client: "Atelier Nova", type: "Réseau", priority: "Basse", status: "Résolue", time: "18 nov." },
-];
-
-const clients = [
-  { name: "Atelier Nova", initials: "AN", plan: "Support essentiel", tickets: 3, color: "lavender" },
-  { name: "Groupe Horizon", initials: "GH", plan: "Gestion informatique", tickets: 2, color: "mint" },
-  { name: "Cabinet Dewael", initials: "CD", plan: "Support essentiel", tickets: 1, color: "peach" },
-];
+type DashboardTicket = { id: string; subject: string; client: string; type: string; priority: string; status: string; time: string };
+type DashboardClient = { id: string; name: string; initials: string; plan: string; tickets: number; color: string };
+type DashboardStats = { clients: number; openTickets: number; interventions: number; hours: number; totalTickets: number };
 
 export default function AdminHome() {
   const [active, setActive] = useState("Vue d'ensemble");
@@ -45,6 +36,11 @@ export default function AdminHome() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showNewTicket, setShowNewTicket] = useState(false);
+  const [tickets, setTickets] = useState<DashboardTicket[]>([]);
+  const [clients, setClients] = useState<DashboardClient[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({ clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 });
+  const [dataLoaded, setDataLoaded] = useState(false);
+  useEffect(() => { fetch("/api/admin/overview", { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error("Chargement impossible"); return response.json(); }).then((data) => { setTickets(data.tickets ?? []); setClients(data.clients ?? []); setStats(data.stats ?? { clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 }); setDataLoaded(true); }).catch(() => setDataLoaded(false)); }, []);
   const filteredTickets = useMemo(() => tickets.filter((ticket) =>
     [ticket.id, ticket.subject, ticket.client, ticket.type].join(" ").toLowerCase().includes(query.toLowerCase())
   ), [query]);
@@ -86,14 +82,14 @@ export default function AdminHome() {
         </header>
 
         {active === "Vue d'ensemble" ? <div className="admin-content">
-          <div className="page-heading"><div><div className="page-eyebrow">20 NOVEMBRE 2026 <span>•</span> ESPACE ADMINISTRATEUR</div><h1>Vue d&apos;ensemble</h1><p>Gardez une vue claire sur l&apos;activité de BN2 Consulting.</p></div><button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={17}/> Nouvelle demande</button></div>
+          <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>Vue d&apos;ensemble</h1><p>Gardez une vue claire sur l&apos;activité de BN2 Consulting.</p></div><button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={17}/> Nouvelle demande</button></div>
           <div className="overview-banner"><div className="banner-orb orb-one"/><div className="banner-orb orb-two"/><div className="banner-copy"><div className="banner-tag"><span/> VOTRE ESPACE DE PILOTAGE</div><h2>Bonjour, bienvenue dans BN2 HUB.</h2><p>Votre activité informatique, vos clients et vos interventions réunis au même endroit.</p></div><div className="banner-art"><div className="banner-art-card"><div className="art-card-top"><span/><span/><span/></div><div className="art-lines"><i/><i/><i/></div><div className="art-check"><CheckCircle2 size={20}/></div></div></div></div>
           <div className="section-heading"><div><h2>Votre activité</h2><p>Les indicateurs clés de votre espace de gestion.</p></div><button className="period-select">30 derniers jours <ChevronDown size={14}/></button></div>
           <div className="admin-metrics">
-            <article className="admin-metric"><div className="metric-label">Clients actifs <span className="metric-symbol purple"><Building2 size={17}/></span></div><div className="metric-number">12</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +2</span> ce mois-ci</div><div className="metric-spark spark-purple"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Demandes ouvertes <span className="metric-symbol amber"><LifeBuoy size={17}/></span></div><div className="metric-number">08</div><div className="metric-trend"><span className="trend-down"><ArrowDownRight size={14}/> -12%</span> vs mois dernier</div><div className="metric-spark spark-amber"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Interventions <span className="metric-symbol blue"><Activity size={17}/></span></div><div className="metric-number">24</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +8%</span> vs mois dernier</div><div className="metric-spark spark-blue"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Heures prestées <span className="metric-symbol green"><Clock3 size={17}/></span></div><div className="metric-number">36<span className="metric-unit">h</span></div><div className="metric-trend"><span className="trend-neutral">Sur 48 h</span> contractuelles</div><div className="hours-progress"><span/></div></article>
+            <article className="admin-metric"><div className="metric-label">Clients actifs <span className="metric-symbol purple"><Building2 size={17}/></span></div><div className="metric-number">{stats.clients}</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +2</span> ce mois-ci</div><div className="metric-spark spark-purple"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Demandes ouvertes <span className="metric-symbol amber"><LifeBuoy size={17}/></span></div><div className="metric-number">{stats.openTickets}</div><div className="metric-trend"><span className="trend-down"><ArrowDownRight size={14}/> -12%</span> vs mois dernier</div><div className="metric-spark spark-amber"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Interventions <span className="metric-symbol blue"><Activity size={17}/></span></div><div className="metric-number">{stats.interventions}</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +8%</span> vs mois dernier</div><div className="metric-spark spark-blue"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Heures prestées <span className="metric-symbol green"><Clock3 size={17}/></span></div><div className="metric-number">{stats.hours}<span className="metric-unit">h</span></div><div className="metric-trend"><span className="trend-neutral">heures enregistrées</span> dans les interventions</div><div className="hours-progress"><span/></div></article>
           </div>
           <div className="dashboard-grid">
             <section className="admin-panel requests-panel"><div className="panel-heading"><div><h3>Demandes récentes</h3><p>Suivez les dernières demandes de vos clients.</p></div><button className="text-action" onClick={() => setActive("Demandes support")}>Toutes les demandes <ChevronRight size={14}/></button></div>
@@ -102,10 +98,10 @@ export default function AdminHome() {
             <section className="admin-panel clients-panel"><div className="panel-heading"><div><h3>Vos clients</h3><p>Vue rapide de votre portefeuille.</p></div><button className="round-action" aria-label="Voir les clients" onClick={() => setActive("Clients")}><ChevronRight size={16}/></button></div><div className="client-list">{clients.map((client) => <button className="client-row" key={client.name} onClick={() => setActive("Clients")}><div className={`client-avatar ${client.color}`}>{client.initials}</div><div className="client-details"><strong>{client.name}</strong><span>{client.plan}</span></div><span className="client-ticket-count">{client.tickets} <small>tickets</small></span></button>)}</div><button className="clients-link" onClick={() => setActive("Clients")}>Gérer les clients <ChevronRight size={14}/></button></section>
           </div>
           <div className="bottom-grid"><section className="admin-panel quick-panel"><div className="panel-heading"><div><h3>Accès rapides</h3><p>Les actions les plus utilisées.</p></div></div><div className="quick-actions"><button onClick={() => setActive("Clients")}><span className="quick-icon quick-purple"><Plus size={18}/></span><span><strong>Ajouter un client</strong><small>Créer un nouvel espace client</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Calendrier")}><span className="quick-icon quick-blue"><CalendarDays size={18}/></span><span><strong>Planifier une intervention</strong><small>Organiser le travail de l&apos;équipe</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Contrats & heures")}><span className="quick-icon quick-green"><FileText size={18}/></span><span><strong>Consulter les contrats</strong><small>Suivre les forfaits et les heures</small></span><ChevronRight size={15}/></button></div></section><section className="admin-panel activity-panel"><div className="panel-heading"><div><h3>Activité récente</h3><p>Les derniers événements de la plateforme.</p></div><button className="round-action" aria-label="Voir l'activité"><ChevronRight size={16}/></button></div><div className="activity-feed"><div className="feed-item"><span className="feed-icon feed-purple"><Plus size={14}/></span><div><strong>Nouvelle demande reçue</strong><p>Atelier Nova · Accès boîte mail</p><small>Il y a 18 minutes</small></div></div><div className="feed-item"><span className="feed-icon feed-green"><CheckCircle2 size={14}/></span><div><strong>Intervention clôturée</strong><p>Groupe Horizon · Mise à jour poste</p><small>Hier à 15:32</small></div></div></div></section></div>
-          <footer className="admin-footer"><span>BN2 HUB <b>•</b> Une solution BN2 Consulting</span><span>APERÇU ADMINISTRATEUR · DONNÉES DE DÉMONSTRATION</span></footer>
+          <footer className="admin-footer"><span>BN2 HUB <b>•</b> Une solution BN2 Consulting</span><span>APERÇU ADMINISTRATEUR · {dataLoaded ? "DONNÉES SUPABASE EN DIRECT" : "CHARGEMENT DES DONNÉES"}</span></footer>
         </div> : <AdminSectionView active={active}/>}
       </section>
-      {showNewTicket && <div className="modal-backdrop" onClick={() => setShowNewTicket(false)}><div className="new-request-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowNewTicket(false)} aria-label="Fermer"><X size={18}/></button><div className="modal-icon"><Plus size={20}/></div><h2>Nouvelle demande</h2><p>La création de demandes sera connectée au système de support dans une prochaine étape.</p><label>Objet de la demande<input placeholder="Ex. : Configuration Microsoft 365" disabled/></label><label>Client<select disabled><option>Sélectionner un client</option></select></label><button className="admin-primary-button modal-submit" onClick={() => setShowNewTicket(false)}>Compris</button></div></div>}
+      {showNewTicket && <div className="modal-backdrop" onClick={() => setShowNewTicket(false)}><div className="new-request-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowNewTicket(false)} aria-label="Fermer"><X size={18}/></button><div className="modal-icon"><Plus size={20}/></div><h2>Nouvelle demande</h2><p>La création des demandes est gérée depuis le module de support.</p><label>Objet de la demande<input placeholder="Ex. : Configuration Microsoft 365" disabled/></label><label>Client<select disabled><option>Sélectionner un client</option></select></label><button className="admin-primary-button modal-submit" onClick={() => setShowNewTicket(false)}>Compris</button></div></div>}
     </main>
   );
 }
