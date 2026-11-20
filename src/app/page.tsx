@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import AdminSectionView from "@/components/admin-section-view";
+import Link from "next/link";
 import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, BriefcaseBusiness, Building2,
   CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3,
-  FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
+  ExternalLink, FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
   ShieldCheck, Users, X, WandSparkles,
 } from "lucide-react";
 
@@ -77,7 +78,7 @@ export default function AdminHome() {
       <section className="admin-main">
         <header className="admin-topbar">
           <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu size={20}/></button><div className="admin-breadcrumb">BN2 HUB <ChevronRight size={14}/><strong>{active}</strong></div></div>
-          <div className="topbar-right">
+          <div className="topbar-right"><Link className="preview-client-link" href="/portal"><ExternalLink size={14}/> Aperçu portail client</Link>
             <div className="global-search"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une demande..." aria-label="Rechercher une demande"/><kbd>⌘ K</kbd></div>
             <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={18}/><i/></button>{showNotifications && <div className="notification-popover"><strong>Notifications</strong><p><span className="notification-dot"/> 2 nouvelles demandes attendent une vérification.</p><p><span className="notification-dot muted"/> Votre aperçu BN2 HUB est prêt.</p></div>}</div>
             <div className="top-user-avatar">NS</div>
