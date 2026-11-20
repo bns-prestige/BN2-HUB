@@ -98,15 +98,11 @@ export default function ClientPortalPage() {
     if (!title.trim() || !description.trim() || !organizationId) return;
     setSuccess("");
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Votre session a expiré. Reconnectez-vous.");
       const priorityValue = priority === "Basse" ? "low" : priority === "Haute" ? "high" : "normal";
-      const { data, error } = await supabase.from("support_tickets").insert({
-        organization_id: organizationId, created_by: user.id, title: title.trim(),
-        description: description.trim(), category, priority: priorityValue,
-      }).select("ticket_number,title,category,status,priority,created_at,description").single();
-      if (error) throw error;
+      const response = await fetch("/api/portal/requests", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({organizationId,title:title.trim(),description:description.trim(),category,priority:priorityValue})});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Impossible d'envoyer la demande.");
+      const data = result.ticket;
       const next: RequestItem = {
         id: data.ticket_number, title: data.title, category: data.category, status: "Nouvelle",
         priority, date: new Date(data.created_at).toLocaleString("fr-BE", { dateStyle: "short", timeStyle: "short" }),
