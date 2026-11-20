@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       .select("role,content")
       .eq("conversation_id", conversation.id)
       .in("role", ["user", "assistant"])
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(24),
     (() => {
       let query = admin.from("ai_knowledge_sources")
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     knowledgeContext ? `BASE DE CONNAISSANCES BN2 — SOURCES AUTORISÉES\n${knowledgeContext}` : "Aucune source de connaissance spécifique n'a été trouvée pour cette question.",
   ].filter(Boolean).join("\n\n");
 
-  const history = (historyResult.data ?? [])
+  const history = [...(historyResult.data ?? [])].reverse()
     .filter((message): message is { role: "user" | "assistant"; content: string } =>
       message.role === "user" || message.role === "assistant"
     )
