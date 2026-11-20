@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Database as SupabaseDatabase } from "@/lib/supabase/database.types";
+import InvoiceManager from "@/components/invoice-manager";
 import {
   ChevronRight, Copy, Database, FileText, Globe, Plus, Save, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
@@ -532,6 +533,7 @@ function StaffManagement(){
 
 export default function AdminSectionView({ active }: { active: string }) {
   if (active === "Demandes support") return <SupportQueue />;
+  if (active === "Facturation") return <InvoiceManager />;
   if (active === "Équipe BN2") return <StaffManagement />;
   if (active === "Portails clients") return <ClientPortalControl />;
   return <LiveModuleSection active={active} />;
