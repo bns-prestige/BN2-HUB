@@ -186,7 +186,7 @@ function ClientPortalControl() {
     <label>Rôle dans le portail<select value={memberRole} onChange={e=>setMemberRole(e.target.value)}><option value="member">Collaborateur</option><option value="agent">Référent IT</option><option value="admin">Administrateur client</option></select></label>
     {inviteError&&<p role="alert" className="client-notice">{inviteError}</p>}
     {inviteMessage&&<p className="client-notice">{inviteMessage}</p>}
-    {invitationUrl&&<div className="builder-fields"><label>Lien d'invitation<input readOnly value={invitationUrl}/></label><button type="button" className="admin-primary-button" onClick={()=>void navigator.clipboard.writeText(invitationUrl)}>Copier le lien d&apos;invitation</button></div>}
+    {invitationUrl&&<div className="builder-fields"><label>Lien d&apos;invitation<input readOnly value={invitationUrl}/></label><button type="button" className="admin-primary-button" onClick={()=>void navigator.clipboard.writeText(invitationUrl)}>Copier le lien d&apos;invitation</button></div>}
     <button className="admin-primary-button" type="submit" disabled={inviting||!selectedOrganizationId||!memberEmail.trim()}><Users size={16}/>{inviting?"Préparation...":"Créer l&apos;accès et générer le lien"}</button>
    </form>
   </section>
