@@ -2,7 +2,7 @@
 
 import { useCallback,useEffect,useMemo,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Activity,RefreshCw,Search } from "lucide-react";
+import { RefreshCw,Search } from "lucide-react";
 
 type AuditRecord={id:string;actor_id:string|null;organization_id:string|null;action:string;entity_type:string;entity_id:string|null;details:unknown;created_at:string;organizations:{name?:string}|{name?:string}[]|null};
 type Profile={id:string;full_name:string|null;email:string|null};
@@ -29,10 +29,10 @@ export default function AuditLogViewer(){
  useEffect(()=>{void load();},[load]);
  const filtered=useMemo(()=>{const term=query.trim().toLowerCase();if(!term)return rows;return rows.filter(row=>(labels[row.action]??row.action).toLowerCase().includes(term)||row.entity_type.toLowerCase().includes(term)||orgName(row.organizations).toLowerCase().includes(term)||String(row.details??"").toLowerCase().includes(term)||String(profiles[row.actor_id??""]??"").toLowerCase().includes(term));},[rows,query,profiles]);
  return <div className="admin-content admin-section-content bn2-audit-page">
-  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> SÉCURITÉ & TRAÇABILITÉ</div><h1>Journal d'audit</h1><p>Historique horodaté des actions importantes effectuées dans la plateforme.</p></div><button className="admin-secondary-button" onClick={()=>void load()}><RefreshCw size={14}/> Actualiser</button></div>
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> SÉCURITÉ & TRAÇABILITÉ</div><h1>Journal d&apos;audit</h1><p>Historique horodaté des actions importantes effectuées dans la plateforme.</p></div><button className="admin-secondary-button" onClick={()=>void load()}><RefreshCw size={14}/> Actualiser</button></div>
   <div className="bn2-audit-toolbar"><div><Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Rechercher une action, un client ou un utilisateur..."/></div><span>{filtered.length} événements</span></div>
   {error&&<p role="alert" className="client-notice">{error}</p>}
   <section className="admin-panel bn2-audit-panel">{loading?<div className="queue-empty">Chargement du journal...</div>:filtered.length===0?<div className="queue-empty">Aucun événement ne correspond à cette recherche.</div>:<div className="table-wrap"><table className="requests-table"><thead><tr><th>DATE</th><th>ACTION</th><th>UTILISATEUR</th><th>ENTREPRISE</th><th>TYPE</th><th>DÉTAILS</th></tr></thead><tbody>{filtered.map(row=><tr key={row.id}><td>{new Date(row.created_at).toLocaleString("fr-BE",{dateStyle:"short",timeStyle:"short"})}</td><td><strong>{labels[row.action]??row.action.replaceAll("_"," ")}</strong></td><td>{profiles[row.actor_id??""]??"Système"}</td><td>{orgName(row.organizations)}</td><td>{row.entity_type}</td><td><button className="bn2-audit-detail-button" onClick={()=>setSelected(row)}>Consulter</button></td></tr>)}</tbody></table></div>}</section>
-  {selected&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><div className="bn2-audit-detail-modal" onClick={event=>event.stopPropagation()}><div><h2>Détails de l'événement</h2><button onClick={()=>setSelected(null)}>×</button></div><p><strong>{labels[selected.action]??selected.action}</strong></p><small>{new Date(selected.created_at).toLocaleString("fr-BE")}</small><pre>{JSON.stringify(selected.details,null,2)}</pre><p className="bn2-audit-meta">ID : {selected.entity_id??"—"} · {selected.entity_type}</p></div></div>}
+  {selected&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><div className="bn2-audit-detail-modal" onClick={event=>event.stopPropagation()}><div><h2>Détails de l&apos;événement</h2><button onClick={()=>setSelected(null)}>×</button></div><p><strong>{labels[selected.action]??selected.action}</strong></p><small>{new Date(selected.created_at).toLocaleString("fr-BE")}</small><pre>{JSON.stringify(selected.details,null,2)}</pre><p className="bn2-audit-meta">ID : {selected.entity_id??"—"} · {selected.entity_type}</p></div></div>}
  </div>;
 }
