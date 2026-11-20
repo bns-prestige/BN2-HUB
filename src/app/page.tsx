@@ -97,7 +97,7 @@ export default function AdminHome() {
             const Icon = item.icon;
             return <div key={item.label}>
               {item.section && <div className="admin-nav-section">{item.section}</div>}
-              <button className={`admin-nav-item ${active === item.label ? "selected" : ""}`} onClick={() => {if (item.label === "Générateur IA") { window.location.href = "/ai-admin"; return; } setActive(item.label); setMobileOpen(false);}}>
+              <button className={`admin-nav-item ${active === item.label ? "selected" : ""}`} onClick={() => {if (item.label === "AI Studio") { window.location.href = "/ai-admin"; return; } setActive(item.label); setMobileOpen(false);}}>
                 <Icon size={17} strokeWidth={1.8}/><span>{item.label}</span>{item.count && <span className="nav-count">{item.count}</span>}
               </button>
             </div>;
