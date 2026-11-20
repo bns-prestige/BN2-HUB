@@ -30,14 +30,6 @@ type ModuleRecord = {
 function moduleOrganizationName(row:ModuleRecord){return Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client";}
 const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 
-const settings = [
-  {icon:ShieldCheck,title:"Sécurité & accès",text:"Rôles, autorisations et politiques d&apos;accès",tag:"Prioritaire"},
-  {icon:Users,title:"Gestion des utilisateurs",text:"Comptes administrateurs et membres BN2",tag:"Configuration"},
-  {icon:Sparkles,title:"Assistant IA",text:"Modèle, instructions et sources autorisées",tag:"À configurer"},
-  {icon:FileText,title:"Modèles de documents",text:"Contrats, rapports et modèles PDF",tag:"Configuration"},
-  {icon:ShieldCheck,title:"Hébergement & infrastructure",text:"Domaines, stockage, sauvegardes et disponibilité",tag:"Infrastructure"},
-];
-
 function SupportQueue() {
  const [tickets,setTickets]=useState<QueueTicket[]>([]);
  const [filter,setFilter]=useState("Toutes");
