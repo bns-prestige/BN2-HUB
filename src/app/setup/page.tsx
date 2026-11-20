@@ -18,8 +18,12 @@ export default function InitialSetupPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => setUser(Boolean(data.user)));
-  }, []);
+    createClient().auth.getUser().then(({ data }) => {
+      const role = data.user?.app_metadata?.role;
+      if (role === "bn2_owner" || role === "bn2_admin") router.replace("/");
+      else setUser(Boolean(data.user));
+    });
+  }, [router]);
 
   async function signup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setMessage(""); setLoading(true);
