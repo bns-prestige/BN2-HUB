@@ -4,7 +4,8 @@ import { useCallback,useEffect,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Building2,CheckCircle2,Clock3,Mail,Save,ShieldCheck,Wallet } from "lucide-react";
 
-type SettingsValue=Record<string,unknown>;
+import type { Json } from "@/lib/supabase/database.types";
+type SettingsValue={ [key:string]: Json | undefined };
 type SettingsMap=Record<string,SettingsValue>;
 type SystemStatus={emailConfigured:boolean;sender:string|null};
 
@@ -34,7 +35,7 @@ export default function PlatformSettings(){
  },[]);
  useEffect(()=>{void load();},[load]);
 
- function value(group:string,key:string,fallback:string|number|boolean=""){
+ function value(group:string,key:string,fallback:unknown=""):unknown{
   return settings[group]?.[key]??fallback;
  }
  function setValue(group:string,key:string,next:unknown){
@@ -48,7 +49,7 @@ export default function PlatformSettings(){
   setSaving(true);setError("");setNotice("");
   const supabase=createClient();
   const {data:{user}}=await supabase.auth.getUser();
-  const rows=Object.entries(settings).map(([key,val])=>({key,value:val,updated_by:user?.id??null}));
+  const rows=Object.entries(settings).map(([key,val])=>({key,value:val as Json,updated_by:user?.id??null}));
   const {error:saveError}=await supabase.from("platform_settings").upsert(rows,{onConflict:"key"});
   if(saveError)setError(saveError.message);else setNotice("Paramètres enregistrés.");
   setSaving(false);
