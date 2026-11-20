@@ -78,7 +78,7 @@ export default function ClientAssistantPage() {
       }
     }
     void initialise();
-  }, [createConversation, openConversation]);
+  }, [createConversation, openConversation, refreshConversations]);
 
   useEffect(() => {
     if (status === "ready" && conversationId) {
