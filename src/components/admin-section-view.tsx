@@ -496,7 +496,7 @@ function StaffManagement(){
   const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
   const result=await response.json();
   if(!response.ok)setError(result.error??"Invitation impossible.");
-  else{setInviteLink(result.inviteLink??"");setNotice("Fiche employé créée. Transmettez le lien sécurisé à la personne invitée.");setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();}
+  else{setInviteLink(result.inviteLink??"");setNotice(result.delivery==="email_sent"?"Invitation envoyée automatiquement par e-mail.":("Fiche employé créée. Copiez le lien pour le transmettre manuellement."+((result.emailError)?" "+result.emailError:"")));setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();}
   setSaving(false);
  }
  async function updateStatus(member:StaffRecord,status:StaffRecord["employment_status"]){
