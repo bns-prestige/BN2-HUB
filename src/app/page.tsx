@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   Activity, Bell, BriefcaseBusiness, Building2,
-  CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, Receipt,
+  CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, ClipboardList, Receipt,
   ExternalLink, FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
   ShieldCheck, Users, X, WandSparkles,
 } from "lucide-react";
@@ -20,6 +20,7 @@ const navigation = [
   { label: "Interventions", icon: BriefcaseBusiness },
   { label: "Contrats & heures", icon: FileText },
   { label: "Facturation", icon: Receipt, section: "FINANCES" },
+  { label: "Journal d'audit", icon: ClipboardList, section: "SÉCURITÉ" },
   { label: "Parc informatique", icon: HardDrive, section: "GESTION" },
   { label: "Calendrier", icon: CalendarDays },
   { label: "Équipe BN2", icon: Users },
