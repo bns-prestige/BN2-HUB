@@ -26,6 +26,13 @@ export default function LoginPage() {
       const role = data.user.app_metadata?.role;
       if (role === "bn2_owner" || role === "bn2_admin") {
         router.replace("/");
+      } else if (role === "bn2_staff" || role === "bn2_agent") {
+        const { data: staff } = await supabase.from("staff_members").select("employment_status").eq("user_id",data.user.id).maybeSingle();
+        if (!staff || !["invited","active"].includes(staff.employment_status)) {
+          await supabase.auth.signOut();
+          throw new Error("Votre accès employé n'est pas actif. Contactez BN2 Consulting.");
+        }
+        router.replace("/staff");
       } else {
         const { data: membership, error: membershipError } = await supabase
           .from("organization_members").select("id").eq("user_id", data.user.id).eq("status", "active").limit(1).maybeSingle();
