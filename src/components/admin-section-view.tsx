@@ -37,6 +37,7 @@ function SupportQueue() {
  const [selected,setSelected]=useState("");
  const [loading,setLoading]=useState(true);
  const [message,setMessage]=useState("");
+ const [error,setError]=useState("");
  const [messages,setMessages]=useState<{body:string;is_internal:boolean}[]>([]);
  const [saving,setSaving]=useState(false);
  const current=tickets.find(ticket=>ticket.recordId===selected);
@@ -46,6 +47,7 @@ function SupportQueue() {
   async function load(){
    const supabase=createClient();
    const {data,error}=await supabase.from("support_tickets").select("id,ticket_number,organization_id,title,description,category,priority,status,created_at,assigned_to,organizations(name)").order("created_at",{ascending:false});
+   if(error)setError(error.message);
    if(!error){
     const statusMap:Record<string,QueueStatus>={new:"Nouvelle",in_progress:"En cours",waiting_customer:"En attente du client",waiting_bn2:"À vérifier",resolved:"Résolue",closed:"Fermée"};
     const priorityMap:Record<string,QueueTicket["priority"]>={low:"Basse",normal:"Normale",high:"Haute",urgent:"Haute"};
@@ -63,29 +65,44 @@ function SupportQueue() {
  },[selected]);
 
  async function updateStatus(status:QueueStatus){
-  if(!current)return;setSaving(true);
+  if(!current)return;setSaving(true);setError("");
   const value:Record<QueueStatus,string>={"Nouvelle":"new","À vérifier":"waiting_bn2","En cours":"in_progress","En attente du client":"waiting_customer","Résolue":"resolved","Fermée":"closed"};
-  const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:value[status]})});
-  const result=await response.json();
-  if(response.ok)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,status}:item));
-  else setMessage(result.error??"Mise à jour impossible.");
-  setSaving(false);
+  try{
+   const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:value[status]})});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Mise à jour impossible.");
+   setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,status}:item));
+  }catch(cause){setError(cause instanceof Error?cause.message:"Mise à jour impossible.");}
+  finally{setSaving(false);}
  }
  async function assignToMe(){
-  if(!current)return;setSaving(true);
-  const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
-  if(user){const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({assignedTo:user.id,status:"in_progress"})});if(response.ok)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,assignee:user.id,status:"En cours"}:item));else setMessage("Impossible de vous attribuer cette demande.");}
-  setSaving(false);
+  if(!current)return;setSaving(true);setError("");
+  try{
+   const supabase=createClient();const {data:{user},error:authError}=await supabase.auth.getUser();
+   if(authError||!user)throw new Error("Votre session a expiré.");
+   const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({assignedTo:user.id,status:"in_progress"})});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Impossible de vous attribuer cette demande.");
+   setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,assignee:user.id,status:"En cours"}:item));
+  }catch(cause){setError(cause instanceof Error?cause.message:"Attribution impossible.");}
+  finally{setSaving(false);}
  }
  async function addNote(){
-  if(!current||!message.trim())return;setSaving(true);
-  const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
-  if(user){const {error}=await supabase.from("ticket_messages").insert({ticket_id:current.recordId,organization_id:current.organizationId,sender_id:user.id,body:message.trim(),is_internal:true});if(!error){setMessages(items=>[...items,{body:message.trim(),is_internal:true}]);setMessage("");}}
-  setSaving(false);
+  if(!current||!message.trim())return;setSaving(true);setError("");
+  try{
+   const supabase=createClient();const {data:{user},error:authError}=await supabase.auth.getUser();
+   if(authError||!user)throw new Error("Votre session a expiré.");
+   const body=message.trim();
+   const {error:insertError}=await supabase.from("ticket_messages").insert({ticket_id:current.recordId,organization_id:current.organizationId,sender_id:user.id,body,is_internal:true});
+   if(insertError)throw new Error(insertError.message);
+   setMessages(items=>[...items,{body,is_internal:true}]);setMessage("");
+  }catch(cause){setError(cause instanceof Error?cause.message:"Impossible d'ajouter la note.");}
+  finally{setSaving(false);}
  }
  return <div className="admin-content support-queue-page">
   <div className="page-heading"><div><div className="page-eyebrow">CENTRE DE SERVICES IT <span>•</span> FILE DE TRAVAIL</div><h1>Demandes support</h1><p>Les demandes réelles enregistrées dans Supabase.</p></div><span className="section-demo-label">DONNÉES EN DIRECT</span></div>
   <div className="queue-kpis"><article><small>À traiter</small><strong>{tickets.filter(t=>t.status==="Nouvelle"||t.status==="À vérifier").length.toString().padStart(2,"0")}</strong><span>Nouvelle ou à vérifier</span></article><article><small>En cours</small><strong>{tickets.filter(t=>t.status==="En cours").length.toString().padStart(2,"0")}</strong><span>Prises en charge</span></article><article><small>En attente client</small><strong>{tickets.filter(t=>t.status==="En attente du client").length.toString().padStart(2,"0")}</strong><span>Informations requises</span></article><article><small>Résolues</small><strong>{tickets.filter(t=>t.status==="Résolue").length.toString().padStart(2,"0")}</strong><span>Demandes terminées</span></article></div>
+  {error&&<p role="alert" className="client-notice">{error}</p>}
   <div className="queue-layout">
    <section className="admin-panel queue-list-panel">
     <div className="queue-list-head"><div><h3>File des demandes</h3><p>{visible.length} demande(s) affichée(s)</p></div><div className="queue-search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher..."/></div></div>
