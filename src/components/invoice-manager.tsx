@@ -79,7 +79,7 @@ export default function InvoiceManager(){
   const supabase=createClient();
   const {data:{user}}=await supabase.auth.getUser();
   const {data:invoice,error:invoiceError}=await supabase.from("service_invoices").insert({
-   organization_id:organizationId,contract_id:contractId||null,issue_date:issueDate,due_date:dueDate||null,
+   organization_id:organizationId,invoice_number:"",contract_id:contractId||null,issue_date:issueDate,due_date:dueDate||null,
    notes:notes.trim()||null,created_by:user?.id??null,status:"draft",
   }).select("id,invoice_number").single();
   if(invoiceError||!invoice){setError(invoiceError?.message??"Création de la facture impossible.");setSaving(false);return;}
