@@ -6,10 +6,14 @@ export type Bn2EmailMessage = {
  replyTo?:string;
 };
 
-export async function sendBn2Email(message:Bn2EmailMessage):Promise<{sent:boolean;id?:string;error?:string;reason?:"not_configured"}>{
+export async function sendBn2Email(message:Bn2EmailMessage):Promise<{sent:boolean;id?:string;error?:string;reason?:"not_configured"|"disabled"}>{
  const apiKey=process.env.RESEND_API_KEY;
  const from=process.env.BN2_FROM_EMAIL;
  if(!apiKey||!from)return {sent:false,reason:"not_configured"};
+ const admin=createAdminClient();
+ const {data:notificationSettings}=await admin.from("platform_settings").select("value").eq("key","notifications").maybeSingle();
+ const config=(notificationSettings?.value??{}) as Record<string,unknown>;
+ if(config.email_enabled!==true)return {sent:false,reason:"disabled"};
  const response=await fetch("https://api.resend.com/emails",{
   method:"POST",
   headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
