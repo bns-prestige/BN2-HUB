@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent,useEffect,useState } from "react";
+import { FormEvent,useCallback,useEffect,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Bot,BriefcaseBusiness,CalendarClock,CheckCircle2,LogOut,Plus,RefreshCw,ShieldCheck,Ticket,Timer } from "lucide-react";
@@ -23,16 +23,16 @@ export default function StaffHome(){
  const [billable,setBillable]=useState(true);
  const [saving,setSaving]=useState(false);
 
- async function load(){
+ const load=useCallback(async()=>{
   setLoading(true);setError("");
   const response=await fetch("/api/staff/overview",{cache:"no-store"});
   const result=await response.json();
   if(!response.ok){setError(result.error==="staff_access_inactive"?"Votre compte employé n'est pas encore activé. Contactez votre administrateur BN2.":"Impossible de charger votre espace de travail.");setLoading(false);return;}
   setData(result);
-  if(!selectedTicket&&result.tickets?.[0])setSelectedTicket(result.tickets[0].id);
+  setSelectedTicket(current=>current||result.tickets?.[0]?.id||"");
   setLoading(false);
- }
- useEffect(()=>{void load();},[]);
+ },[]);
+ useEffect(()=>{void load();},[load]);
 
  async function updateTicket(id:string,status:string){
   const {error:updateError}=await createClient().from("support_tickets").update({status}).eq("id",id);
