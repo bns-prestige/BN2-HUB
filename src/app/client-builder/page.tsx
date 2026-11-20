@@ -19,8 +19,8 @@ const moduleOptions = [
 ];
 
 const palettes = [
-  { id: "violet", label: "Violet BN2", color: "#6958df", soft: "#f0efff" },
-  { id: "blue", label: "Bleu", color: "#3977d5", soft: "#edf4ff" },
+  { id: "blue", label: "Bleu BN2", color: "#0b84d8", soft: "#eaf3ff" },
+  { id: "violet", label: "Violet BN2", color: "#6a4cff", soft: "#f0edff" },
   { id: "teal", label: "Turquoise", color: "#259b91", soft: "#eaf8f6" },
   { id: "slate", label: "Ardoise", color: "#52627d", soft: "#eff2f7" },
 ];
@@ -30,7 +30,7 @@ export default function ClientBuilderPage() {
   const [sector, setSector] = useState("Services professionnels");
   const [description, setDescription] = useState("Une entreprise qui souhaite centraliser son support informatique et le suivi de son matériel.");
   const [selectedModules, setSelectedModules] = useState(["dashboard", "support", "equipment", "documents", "team"]);
-  const [palette, setPalette] = useState("violet");
+  const [palette, setPalette] = useState("blue");
   const [prepared, setPrepared] = useState(false);
   const [activePreview, setActivePreview] = useState("dashboard");
   const selectedPalette = palettes.find((item) => item.id === palette) ?? palettes[0];
