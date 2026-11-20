@@ -40,6 +40,7 @@ export default function InvoiceManager(){
  const [defaultTaxRate,setDefaultTaxRate]=useState("21");
  const [defaultCurrency,setDefaultCurrency]=useState("EUR");
  const [paymentTermsDays,setPaymentTermsDays]=useState(30);
+ const [companyProfile,setCompanyProfile]=useState<Record<string,unknown>>({display_name:"BN2 Consulting"});
 
  const load=useCallback(async()=>{
   setLoading(true);setError("");
@@ -50,11 +51,14 @@ export default function InvoiceManager(){
    supabase.from("service_invoices").select("id,invoice_number,organization_id,contract_id,status,currency,issue_date,due_date,subtotal,tax_total,total,notes,organizations(name)").order("created_at",{ascending:false}).limit(200),
    supabase.from("service_invoice_items").select("id,invoice_id,description,quantity,unit_price,tax_rate,line_total").order("created_at"),
    supabase.from("service_payments").select("id,invoice_id,amount,method,status,reference,paid_at").order("created_at",{ascending:false}),
-   supabase.from("platform_settings").select("value").eq("key","billing").maybeSingle(),
+   supabase.from("platform_settings").select("key,value").in("key",["billing","company_profile"]),
   ]);
   const firstError=orgResult.error??contractResult.error??invoiceResult.error??itemResult.error??paymentResult.error??settingsResult.error;
   if(firstError)setError(firstError.message);
-  const billing=(settingsResult.data?.value??{}) as Record<string,unknown>;
+  const settingsRows=settingsResult.data??[];
+  const billing=(settingsRows.find(row=>row.key==="billing")?.value??{}) as Record<string,unknown>;
+  const profile=(settingsRows.find(row=>row.key==="company_profile")?.value??{display_name:"BN2 Consulting"}) as Record<string,unknown>;
+  setCompanyProfile(profile);
   const vat=Number(billing.vat_rate??21);const currency=String(billing.currency??"EUR");const terms=Number(billing.payment_terms_days??30);
   setDefaultTaxRate(String(vat));setDefaultCurrency(currency);setPaymentTermsDays(terms);
   const invoiceRows=(invoiceResult.data??[]) as Invoice[];
@@ -118,8 +122,10 @@ export default function InvoiceManager(){
   const w=window.open("","_blank");
   if(!w){setError("Autorisez les fenêtres pop-up pour imprimer la facture.");return;}
   const rows=invoiceItems.map(item=>"<tr><td>"+html(item.description)+"</td><td>"+item.quantity+"</td><td>"+money(item.unit_price,invoice.currency)+"</td><td>"+item.tax_rate+"%</td><td>"+money(item.line_total,invoice.currency)+"</td></tr>").join("");
+  const companyName=html(String(companyProfile.display_name??"BN2 Consulting"));
+  const companyDetails=[companyProfile.legal_name,companyProfile.address,companyProfile.vat_number,companyProfile.email,companyProfile.phone,companyProfile.website].filter(Boolean).map(value=>html(String(value))).join("<br>");
   const note=invoice.notes?"<div class='notes'><strong>Notes</strong><p>"+html(invoice.notes)+"</p></div>":"";
-  const documentHtml="<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>"+html(invoice.invoice_number)+"</title><style>body{font-family:Arial,sans-serif;color:#18263b;margin:48px}header{display:flex;justify-content:space-between;border-bottom:3px solid #1768d2;padding-bottom:24px}h1{font-size:28px;margin:0 0 8px}small{color:#68788f}table{width:100%;border-collapse:collapse;margin-top:36px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #e5eaf1;font-size:12px}th{background:#f4f7fb}.totals{margin:25px 0 0 auto;width:280px}.totals div{display:flex;justify-content:space-between;padding:8px 0}.total{font-size:18px;font-weight:bold;border-top:2px solid #17253b}.notes{margin-top:36px;font-size:12px;white-space:pre-wrap}@media print{body{margin:20mm}}</style></head><body><header><div><h1>BN2 Consulting</h1><small>Services informatiques · Belgique</small></div><div><h1>FACTURE</h1><strong>"+html(invoice.invoice_number)+"</strong><p>Émise le "+new Date(invoice.issue_date).toLocaleDateString("fr-BE")+"</p><p>Échéance : "+(invoice.due_date?new Date(invoice.due_date).toLocaleDateString("fr-BE"):"—")+"</p></div></header><h3>Facturé à</h3><strong>"+html(clientName(invoice.organizations))+"</strong><table><thead><tr><th>Description</th><th>Qté</th><th>Prix unitaire</th><th>TVA</th><th>Total TVAC</th></tr></thead><tbody>"+rows+"</tbody></table><div class='totals'><div><span>Hors TVA</span><strong>"+money(invoice.subtotal,invoice.currency)+"</strong></div><div><span>TVA</span><strong>"+money(invoice.tax_total,invoice.currency)+"</strong></div><div class='total'><span>Total</span><strong>"+money(invoice.total,invoice.currency)+"</strong></div></div>"+note+"<script>window.onload=function(){window.print();};</script></body></html>";
+  const documentHtml="<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>"+html(invoice.invoice_number)+"</title><style>body{font-family:Arial,sans-serif;color:#18263b;margin:48px}header{display:flex;justify-content:space-between;border-bottom:3px solid #1768d2;padding-bottom:24px}h1{font-size:28px;margin:0 0 8px}small{color:#68788f}table{width:100%;border-collapse:collapse;margin-top:36px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #e5eaf1;font-size:12px}th{background:#f4f7fb}.totals{margin:25px 0 0 auto;width:280px}.totals div{display:flex;justify-content:space-between;padding:8px 0}.total{font-size:18px;font-weight:bold;border-top:2px solid #17253b}.notes{margin-top:36px;font-size:12px;white-space:pre-wrap}@media print{body{margin:20mm}}</style></head><body><header><div><h1>"+companyName+"</h1><small>"+companyDetails+"</small></div><div><h1>FACTURE</h1><strong>"+html(invoice.invoice_number)+"</strong><p>Émise le "+new Date(invoice.issue_date).toLocaleDateString("fr-BE")+"</p><p>Échéance : "+(invoice.due_date?new Date(invoice.due_date).toLocaleDateString("fr-BE"):"—")+"</p></div></header><h3>Facturé à</h3><strong>"+html(clientName(invoice.organizations))+"</strong><table><thead><tr><th>Description</th><th>Qté</th><th>Prix unitaire</th><th>TVA</th><th>Total TVAC</th></tr></thead><tbody>"+rows+"</tbody></table><div class='totals'><div><span>Hors TVA</span><strong>"+money(invoice.subtotal,invoice.currency)+"</strong></div><div><span>TVA</span><strong>"+money(invoice.tax_total,invoice.currency)+"</strong></div><div class='total'><span>Total</span><strong>"+money(invoice.total,invoice.currency)+"</strong></div></div>"+note+"<script>window.onload=function(){window.print();};</script></body></html>";
   w.document.write(documentHtml);w.document.close();
  }
 
