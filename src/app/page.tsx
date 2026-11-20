@@ -81,7 +81,7 @@ export default function AdminHome() {
         </header>
 
         {active === "Vue d'ensemble" ? <div className="admin-content">
-          <div className="page-heading"><div><div className="page-eyebrow">MERCREDI 20 NOVEMBRE 2026 <span>•</span> ESPACE ADMINISTRATEUR</div><h1>Vue d'ensemble</h1><p>Gardez une vue claire sur l'activité de BN2 Consulting.</p></div><button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={17}/> Nouvelle demande</button></div>
+          <div className="page-heading"><div><div className="page-eyebrow">20 NOVEMBRE 2026 <span>•</span> ESPACE ADMINISTRATEUR</div><h1>Vue d'ensemble</h1><p>Gardez une vue claire sur l'activité de BN2 Consulting.</p></div><button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={17}/> Nouvelle demande</button></div>
           <div className="overview-banner"><div className="banner-orb orb-one"/><div className="banner-orb orb-two"/><div className="banner-copy"><div className="banner-tag"><span/> VOTRE ESPACE DE PILOTAGE</div><h2>Bonjour, bienvenue dans BN2 HUB.</h2><p>Votre activité informatique, vos clients et vos interventions réunis au même endroit.</p></div><div className="banner-art"><div className="banner-art-card"><div className="art-card-top"><span/><span/><span/></div><div className="art-lines"><i/><i/><i/></div><div className="art-check"><CheckCircle2 size={20}/></div></div></div></div>
           <div className="section-heading"><div><h2>Votre activité</h2><p>Les indicateurs clés de votre espace de gestion.</p></div><button className="period-select">30 derniers jours <ChevronDown size={14}/></button></div>
           <div className="admin-metrics">
