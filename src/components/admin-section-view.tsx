@@ -9,6 +9,28 @@ type Row = { cells: string[]; status?: string; priority?: string };
 type Section = { intro: string; metrics: { label: string; value: string; hint: string }[]; columns: string[]; rows: Row[] };
 
 const sections: Record<string, Section> = {
+  "Portails clients": {
+    intro: "Pilotez les espaces privés de vos clients : accès, modules, personnalisation et disponibilité.",
+    metrics: [{label:"Portails actifs",value:"12",hint:"Espaces clients hébergés par BN2"},{label:"À configurer",value:"02",hint:"En attente de publication"},{label:"Utilisateurs",value:"38",hint:"Comptes clients actifs"}],
+    columns:["Organisation","Adresse du portail","Modules","Utilisateurs","État"],
+    rows:[
+      {cells:["Atelier Nova","atelier-nova.bn2hub.be","6 modules","08","Actif"],status:"Actif"},
+      {cells:["Groupe Horizon","groupe-horizon.bn2hub.be","5 modules","14","Actif"],status:"Actif"},
+      {cells:["Cabinet Dewael","cabinet-dewael.bn2hub.be","4 modules","06","Actif"],status:"Actif"},
+      {cells:["Studio Meridian","À attribuer","À configurer","—","Brouillon"],status:"Brouillon"},
+    ],
+  },
+  Hébergement: {
+    intro: "Une infrastructure centralisée, opérée et financée par BN2 Consulting pour tous les portails clients.",
+    metrics: [{label:"Environnements",value:"12",hint:"Portails sur la plateforme BN2"},{label:"Disponibilité cible",value:"99,9 %",hint:"Objectif de service, non mesuré ici"},{label:"Facturation",value:"BN2",hint:"Abonnements centralisés"}],
+    columns:["Service","Rôle","Gestionnaire","Facturation","État"],
+    rows:[
+      {cells:["Application BN2 HUB","Portails et administration","BN2 Consulting","Centralisée BN2","À déployer"],status:"À déployer"},
+      {cells:["Base de données Supabase","Données isolées par organisation","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
+      {cells:["Stockage documents","Fichiers et pièces jointes","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
+      {cells:["DNS & domaines","Sous-domaines clients","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
+    ],
+  },
   "Demandes support": {
     intro: "Centralisez les demandes reçues et suivez leur traitement par l'équipe BN2.",
     metrics: [{label:"À traiter",value:"08",hint:"Demandes nouvelles"},{label:"En cours",value:"12",hint:"Prises en charge"},{label:"En attente",value:"04",hint:"Retour client requis"}],
@@ -98,6 +120,7 @@ const settings = [
   {icon:Users,title:"Gestion des utilisateurs",text:"Comptes administrateurs et membres BN2",tag:"Configuration"},
   {icon:Sparkles,title:"Assistant IA",text:"Modèle, instructions et sources autorisées",tag:"À configurer"},
   {icon:FileText,title:"Modèles de documents",text:"Contrats, rapports et modèles PDF",tag:"Configuration"},
+  {icon:ShieldCheck,title:"Hébergement & infrastructure",text:"Domaines, stockage, sauvegardes et disponibilité",tag:"Infrastructure"},
 ];
 
 export default function AdminSectionView({ active }: { active: string }) {
@@ -110,7 +133,7 @@ export default function AdminSectionView({ active }: { active: string }) {
     </div>;
   }
   return <div className="admin-content admin-section-content">
-    <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{data.intro}</p></div>{active === "Clients" ? <Link className="admin-primary-button" href="/client-builder"><Plus size={16}/> Créer un espace client</Link> : <div className="section-demo-label">DONNÉES DE DÉMONSTRATION</div>}</div>
+    <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{data.intro}</p></div>{active === "Clients" || active === "Portails clients" ? <Link className="admin-primary-button" href="/client-builder"><Plus size={16}/> Créer un espace client</Link> : <div className="section-demo-label">{active === "Hébergement" ? "INFRASTRUCTURE À CONFIGURER" : "DONNÉES DE DÉMONSTRATION"}</div>}</div>
     <div className="section-metrics">{data.metrics.map((metric) => <article className="admin-panel section-metric" key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.hint}</small></article>)}</div>
     <section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>{active === "Clients" ? "Portefeuille clients" : active === "Demandes support" ? "File des demandes" : "Liste et suivi"}</h3><p>Vue de démonstration pour préparer la connexion aux données réelles.</p></div><span className="section-record-count">{data.rows.length} éléments</span></div>
       <div className="table-wrap"><table className="requests-table section-data-table"><thead><tr>{data.columns.map((column) => <th key={column}>{column.toUpperCase()}</th>)}</tr></thead><tbody>{data.rows.map((row,index)=><tr key={index}>{row.cells.map((cell,i)=><td key={i}>{i===0?<strong>{cell}</strong>:cell}{i===0 && active!=="Demandes support" && <span>{active === "Clients" ? "Organisation cliente" : "Référence de suivi"}</span>}</td>)}</tr>)}</tbody></table></div>
