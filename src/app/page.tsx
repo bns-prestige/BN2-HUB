@@ -32,6 +32,7 @@ type DashboardTicket = { id: string; subject: string; client: string; type: stri
 type DashboardClient = { id: string; name: string; initials: string; plan: string; tickets: number; color: string };
 type DashboardStats = { clients: number; openTickets: number; interventions: number; hours: number; totalTickets: number; newTickets: number };
 type DashboardActivity = { id:string; title:string; description:string; time:string; action:string };
+type DashboardNotification = {id:string;title:string;body:string;href:string|null;read_at:string|null;created_at:string};
 
 export default function AdminHome() {
   const [active, setActive] = useState("Vue d'ensemble");
@@ -43,6 +44,8 @@ export default function AdminHome() {
   const [clients, setClients] = useState<DashboardClient[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0, newTickets: 0 });
   const [activity,setActivity] = useState<DashboardActivity[]>([]);
+  const [notifications,setNotifications] = useState<DashboardNotification[]>([]);
+  const [unreadNotifications,setUnreadNotifications] = useState(0);
   const [ticketTitle,setTicketTitle] = useState("");
   const [ticketDescription,setTicketDescription] = useState("");
   const [ticketOrganization,setTicketOrganization] = useState("");
@@ -59,6 +62,8 @@ export default function AdminHome() {
     setClients(data.clients ?? []);
     setStats(data.stats ?? { clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0, newTickets: 0 });
     setActivity(data.activity ?? []);
+    setNotifications(data.notifications ?? []);
+    setUnreadNotifications(data.unreadNotifications ?? 0);
     setTicketOrganization((current) => current || data.clients?.[0]?.id || "");
     setDataLoaded(true);
   }, []);
@@ -108,7 +113,7 @@ export default function AdminHome() {
           <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu size={20}/></button><div className="admin-breadcrumb">BN2 HUB <ChevronRight size={14}/><strong>{active}</strong></div></div>
           <div className="topbar-right"><Link className="preview-client-link" href="/portal"><ExternalLink size={14}/> Aperçu portail client</Link>
             <div className="global-search"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une demande..." aria-label="Rechercher une demande"/><kbd>⌘ K</kbd></div>
-            <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={18}/>{stats.newTickets>0&&<i/>}</button>{showNotifications && <div className="notification-popover"><strong>Notifications</strong><p><span className="notification-dot"/>{stats.newTickets} nouvelle(s) demande(s) à vérifier.</p><p><span className="notification-dot muted"/>{stats.openTickets} demande(s) encore ouvertes.</p><button onClick={()=>{setActive("Demandes support");setShowNotifications(false);}}>Ouvrir le support <ChevronRight size={13}/></button></div>}</div>
+            <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={async () => {const next=!showNotifications;setShowNotifications(next);if(next&&unreadNotifications>0){const ids=notifications.filter(item=>!item.read_at).map(item=>item.id);const {error}=await createClient().from("notifications").update({read_at:new Date().toISOString()}).in("id",ids);if(!error){setNotifications(items=>items.map(item=>({...item,read_at:item.read_at??new Date().toISOString()})));setUnreadNotifications(0);}}}}><Bell size={18}/>{unreadNotifications>0&&<i/>}</button>{showNotifications && <div className="notification-popover"><strong>Notifications ({unreadNotifications} non lues)</strong>{notifications.length===0?<p>Aucune notification.</p>:notifications.map(item=><button className="bn2-notification-item" key={item.id} onClick={()=>{setShowNotifications(false);if(item.href==="/portal")window.location.href="/portal";else if(item.href==="/staff")window.location.href="/staff";else if(item.title.toLowerCase().includes("demande"))setActive("Demandes support");}}><span className="notification-dot"/><span><b>{item.title}</b><small>{item.body}</small></span></button>)}</div>}</div>
             <div className="top-user-avatar">NS</div>
           </div>
         </header>
