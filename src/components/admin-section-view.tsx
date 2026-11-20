@@ -209,11 +209,19 @@ function ClientPortalControl() {
  const [description,setDescription]=useState("");
  const [error,setError]=useState("");
  const [saving,setSaving]=useState(false);
+ const [selectedOrganizationId,setSelectedOrganizationId]=useState("");
+ const [memberEmail,setMemberEmail]=useState("");
+ const [memberName,setMemberName]=useState("");
+ const [memberRole,setMemberRole]=useState("member");
+ const [inviting,setInviting]=useState(false);
+ const [inviteMessage,setInviteMessage]=useState("");
+ const [inviteError,setInviteError]=useState("");
+ const [invitationUrl,setInvitationUrl]=useState("");
 
  async function load(){
   setLoading(true);
   const {data,error}=await createClient().from("organizations").select("id,name,slug,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
-  if(error)setError(error.message);else setClients(data??[]);
+  if(error)setError(error.message);else{setClients(data??[]);if(!selectedOrganizationId&&data?.[0])setSelectedOrganizationId(data[0].id);}
   setLoading(false);
  }
  useEffect(()=>{void load();},[]);
@@ -221,16 +229,38 @@ function ClientPortalControl() {
  async function createOrganization(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setSaving(true);
   const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  const {error}=await createClient().from("organizations").insert({name:name.trim(),slug,sector,description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding"}).select("id").single();
-  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");await load();}
+  const {data,error}=await createClient().from("organizations").insert({name:name.trim(),slug,sector,description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding"}).select("id").single();
+  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");setSelectedOrganizationId(data.id);await load();}
   setSaving(false);
  }
  async function updateStatus(id:string,status:string){
   const {error}=await createClient().from("organizations").update({status}).eq("id",id);
   if(error)setError(error.message);else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
  }
+ async function inviteMember(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();setInviteError("");setInviteMessage("");setInvitationUrl("");setInviting(true);
+  try{
+   const supabase=createClient();
+   const {data:{session}}=await supabase.auth.getSession();
+   if(!session)throw new Error("Session expirée. Reconnectez-vous.");
+   const apiKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+   if(!apiKey)throw new Error("Clé publique Supabase manquante.");
+   const response=await fetch("https://almzypjgccucdkwnpldy.supabase.co/functions/v1/bn2-invite-member",{
+    method:"POST",
+    headers:{Authorization:"Bearer "+session.access_token,apikey:apiKey,"Content-Type":"application/json"},
+    body:JSON.stringify({email:memberEmail,fullName:memberName,organizationId:selectedOrganizationId,memberRole}),
+   });
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Invitation impossible.");
+   setInvitationUrl(result.actionLink??"");
+   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d'invitation généré. Copiez-le et envoyez-le au client.");
+   setMemberEmail("");setMemberName("");
+  }catch(cause){setInviteError(cause instanceof Error?cause.message:"Invitation impossible.");}
+  finally{setInviting(false);}
+ }
+ const selectedOrganization=clients.find(item=>item.id===selectedOrganizationId);
  return <div className="admin-content admin-section-content">
-  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Portails clients</h1><p>Créez et gérez les organisations qui utilisent les services BN2.</p></div><span className="section-demo-label">SUPABASE EN DIRECT</span></div>
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Portails clients</h1><p>Créez des organisations et donnez accès aux collaborateurs de vos clients.</p></div><span className="section-demo-label">SUPABASE EN DIRECT</span></div>
   <div className="portal-control-layout">
    <section className="admin-panel portal-config-panel">
     <div className="portal-config-heading"><div><div className="page-eyebrow">NOUVELLE ORGANISATION</div><h2>Créer un espace client</h2><p>L'organisation sera enregistrée dans la base BN2.</p></div></div>
@@ -247,13 +277,25 @@ function ClientPortalControl() {
     <div className="panel-heading"><div><h3>Organisations enregistrées</h3><p>{clients.length} organisation(s) dans Supabase.</p></div><span className="section-record-count">{clients.length}</span></div>
     {loading&&<p>Chargement...</p>}
     {!loading&&clients.length===0&&<p>Aucune organisation enregistrée pour le moment.</p>}
-    {clients.map(item=><article className="portal-client-choice" key={item.id}>
+    {clients.map(item=><article className={"portal-client-choice "+(selectedOrganizationId===item.id?"selected":"")} key={item.id}>
       <span className="portal-client-avatar">{item.name.split(/\s+/).map((part:string)=>part[0]).join("").slice(0,2).toUpperCase()}</span>
-      <span className="portal-client-copy"><strong>{item.name}</strong><small>{item.contact_email||item.slug}</small></span>
+      <button type="button" className="portal-client-copy" onClick={()=>setSelectedOrganizationId(item.id)}><strong>{item.name}</strong><small>{item.contact_email||item.slug}</small></button>
       <select aria-label={"Statut de "+item.name} value={item.status} onChange={e=>void updateStatus(item.id,e.target.value)}><option value="onboarding">À configurer</option><option value="active">Actif</option><option value="suspended">Suspendu</option><option value="archived">Archivé</option></select>
     </article>)}
    </section>
   </div>
+  <section className="admin-panel portal-config-panel" style={{marginTop:20}}>
+   <div className="portal-config-heading"><div><div className="page-eyebrow">ACCÈS UTILISATEUR</div><h2>{selectedOrganization? "Inviter un collaborateur · "+selectedOrganization.name : "Sélectionnez une organisation"}</h2><p>Un lien d'invitation sécurisé sera généré pour le compte client.</p></div></div>
+   <form className="builder-fields" onSubmit={inviteMember}>
+    <label>Nom complet<input value={memberName} onChange={e=>setMemberName(e.target.value)} required placeholder="Nom du collaborateur"/></label>
+    <label>Adresse e-mail<input type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} required placeholder="collaborateur@entreprise.be"/></label>
+    <label>Rôle dans le portail<select value={memberRole} onChange={e=>setMemberRole(e.target.value)}><option value="member">Collaborateur</option><option value="agent">Référent IT</option><option value="admin">Administrateur client</option></select></label>
+    {inviteError&&<p role="alert" className="client-notice">{inviteError}</p>}
+    {inviteMessage&&<p className="client-notice">{inviteMessage}</p>}
+    {invitationUrl&&<div className="builder-fields"><label>Lien d'invitation<input readOnly value={invitationUrl}/></label><button type="button" className="admin-primary-button" onClick={()=>void navigator.clipboard.writeText(invitationUrl)}>Copier le lien d'invitation</button></div>}
+    <button className="admin-primary-button" type="submit" disabled={inviting||!selectedOrganizationId||!memberEmail.trim()}><Users size={16}/>{inviting?"Préparation...":"Créer l'accès et générer le lien"}</button>
+   </form>
+  </section>
  </div>;
 }
 
