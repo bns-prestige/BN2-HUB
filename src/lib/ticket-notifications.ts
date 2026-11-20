@@ -55,3 +55,34 @@ export async function notifyTicketStatusChanged(organizationId:string,ticket:{ti
  }
  return {sent};
 }
+
+
+export async function notifyTicketMessage(organizationId:string,ticket:{ticket_number:string;title:string},message:string,actorId:string){
+ const admin=createAdminClient();
+ const {data:actor}=await admin.auth.admin.getUserById(actorId);
+ const actorRole=String(actor.user?.app_metadata?.role??"");
+ const recipients=new Set<string>();
+ if(["bn2_staff","bn2_agent","bn2_owner","bn2_admin"].includes(actorRole)){
+  const {data:members}=await admin.from("organization_members").select("user_id").eq("organization_id",organizationId).eq("status","active");
+  for(const item of members??[])if(item.user_id!==actorId)recipients.add(item.user_id);
+ }else{
+  const {data:staff}=await admin.from("staff_members").select("user_id,permissions").in("employment_status",["invited","active"]);
+  for(const item of staff??[])if((item.permissions as Record<string,boolean>|null)?.["tickets.read"]&&item.user_id!==actorId)recipients.add(item.user_id);
+  const {data:users}=await admin.auth.admin.listUsers({page:1,perPage:1000});
+  for(const item of users.users)if(["bn2_owner","bn2_admin"].includes(String(item.app_metadata?.role??""))&&item.id!==actorId)recipients.add(item.id);
+ }
+ const ids=[...recipients];
+ if(!ids.length)return {sent:0};
+ const {data:profiles}=await admin.from("profiles").select("email").in("id",ids);
+ const emails=[...new Set((profiles??[]).map(profile=>profile.email?.trim().toLowerCase()).filter((email):email is string=>Boolean(email)))];
+ let sent=0;
+ for(const email of emails){
+  const result=await sendBn2Email({
+   to:[email],subject:"Nouveau message · "+ticket.ticket_number,
+   html:"<div style='font-family:Arial,sans-serif;color:#17253b;max-width:560px;margin:auto;padding:28px'><strong style='color:#1768d2'>BN2 CONSULTING</strong><h1 style='font-size:20px'>Nouveau message sur une demande</h1><p><strong>"+escapeHtml(ticket.ticket_number)+" · "+escapeHtml(ticket.title)+"</strong></p><blockquote style='border-left:3px solid #1768d2;padding:8px 14px;color:#52627a'>"+escapeHtml(message)+"</blockquote><p>Connectez-vous à BN2 HUB pour répondre.</p></div>",
+   text:"Nouveau message sur "+ticket.ticket_number+": "+message,
+  });
+  if(result.sent)sent++;
+ }
+ return {sent};
+}
