@@ -1,0 +1,50 @@
+name: Dependency security remediation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 7 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit-and-remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and generate lockfile
+        run: npm install
+      - name: Apply non-breaking security fixes
+        run: npm audit fix
+        continue-on-error: true
+      - name: Capture remaining audit report
+        id: audit
+        shell: bash
+        run: |
+          npm audit --json > npm-audit-report.json || true
+          node -e "const a=require('./npm-audit-report.json'); const v=a.metadata?.vulnerabilities||{}; console.log('Dependency audit: '+JSON.stringify(v));"
+      - name: Open pull request with lockfile and safe updates
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ github.token }}
+          branch: chore/dependency-security-remediation
+          delete-branch: true
+          title: "chore: remediate npm dependency vulnerabilities"
+          commit-message: "chore: update npm dependency lockfile"
+          body: |
+            Automated dependency maintenance.
+
+            - Generated a reproducible npm lockfile.
+            - Applied non-breaking fixes with `npm audit fix` (no `--force`).
+            - CI will validate lint, TypeScript, and production build before merge.
+          add-paths: |
+            package-lock.json
+            package.json
