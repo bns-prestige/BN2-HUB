@@ -662,12 +662,15 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: string | null
           address_line1: string | null
           billing_address: Json
           billing_email: string | null
           brand_color: string
           city: string | null
+          company_size: string | null
           contact_email: string | null
+          contact_name: string | null
           contact_phone: string | null
           country: string | null
           created_at: string
@@ -678,6 +681,7 @@ export type Database = {
           internal_notes: string | null
           legal_name: string | null
           name: string
+          phone: string | null
           postal_code: string | null
           sector: string | null
           slug: string
@@ -687,12 +691,15 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          address?: string | null
           address_line1?: string | null
           billing_address?: Json
           billing_email?: string | null
           brand_color?: string
           city?: string | null
+          company_size?: string | null
           contact_email?: string | null
+          contact_name?: string | null
           contact_phone?: string | null
           country?: string | null
           created_at?: string
@@ -703,6 +710,7 @@ export type Database = {
           internal_notes?: string | null
           legal_name?: string | null
           name: string
+          phone?: string | null
           postal_code?: string | null
           sector?: string | null
           slug: string
@@ -712,12 +720,15 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          address?: string | null
           address_line1?: string | null
           billing_address?: Json
           billing_email?: string | null
           brand_color?: string
           city?: string | null
+          company_size?: string | null
           contact_email?: string | null
+          contact_name?: string | null
           contact_phone?: string | null
           country?: string | null
           created_at?: string
@@ -728,6 +739,7 @@ export type Database = {
           internal_notes?: string | null
           legal_name?: string | null
           name?: string
+          phone?: string | null
           postal_code?: string | null
           sector?: string | null
           slug?: string
