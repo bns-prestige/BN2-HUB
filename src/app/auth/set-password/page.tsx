@@ -28,7 +28,7 @@ export default function SetPasswordPage(){
   <form onSubmit={submit} style={{width:"min(100%,420px)",background:"#fff",border:"1px solid #e4eaf2",borderRadius:18,padding:30,boxShadow:"0 15px 50px #1c355410"}}>
    <div style={{width:42,height:42,borderRadius:13,background:"#edf4ff",color:"#1768d2",display:"grid",placeItems:"center"}}><ShieldCheck size={20}/></div>
    <h1 style={{fontSize:22,margin:"18px 0 7px",color:"#17253b"}}>Sécurisez votre accès</h1>
-   <p style={{fontSize:12,color:"#7b899c",lineHeight:1.7,margin:"0 0 22px"}}>Choisissez un mot de passe personnel pour accéder à l'espace de travail BN2.</p>
+   <p style={{fontSize:12,color:"#7b899c",lineHeight:1.7,margin:"0 0 22px"}}>Choisissez un mot de passe personnel pour accéder à l&apos;espace de travail BN2.</p>
    <label style={{display:"grid",gap:8,fontSize:11,fontWeight:800,color:"#4e5f76"}}>Nouveau mot de passe<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)} style={{padding:12,border:"1px solid #dfe6ef",borderRadius:9,fontSize:12}}/></label>
    <label style={{display:"grid",gap:8,fontSize:11,fontWeight:800,color:"#4e5f76",marginTop:15}}>Confirmer le mot de passe<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={e=>setConfirm(e.target.value)} style={{padding:12,border:"1px solid #dfe6ef",borderRadius:9,fontSize:12}}/></label>
    {error&&<p style={{color:"#a33e36",fontSize:11,margin:"12px 0"}}>{error}</p>}
