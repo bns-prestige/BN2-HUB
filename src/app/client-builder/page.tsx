@@ -96,7 +96,7 @@ export default function ClientBuilderPage() {
             </div>
 
             <div className="builder-divider"/>
-            <div className="builder-section-title"><div className="builder-section-icon"><Palette size={18}/></div><div><h2>Identité visuelle</h2><p>Choisissez une couleur d'accent pour ce portail.</p></div></div>
+            <div className="builder-section-title"><div className="builder-section-icon"><Palette size={18}/></div><div><h2>Identité visuelle</h2><p>Choisissez une couleur d&apos;accent pour ce portail.</p></div></div>
             <div className="builder-palette-list">
               {palettes.map((item) => <button type="button" key={item.id} className={`builder-palette ${palette === item.id ? "chosen" : ""}`} onClick={() => {setPalette(item.id); setPrepared(false);}}><span style={{ background: item.color }}/>{item.label}{palette === item.id && <CheckCircle2 size={15}/>}</button>)}
             </div>
@@ -132,7 +132,7 @@ export default function ClientBuilderPage() {
               <div><span>Modules activés</span><strong>{selectedModules.length} / {moduleOptions.length}</strong></div>
               <div><span>Thème</span><strong>{selectedPalette.label}</strong></div>
             </div>
-            {prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Proposition prête à vérifier</strong><p>L&apos;aperçu a été actualisé. Aucune publication ni création de compte n'a été effectuée.</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
+            {prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Proposition prête à vérifier</strong><p>L&apos;aperçu a été actualisé. Aucune publication ni création de compte n&apos;a été effectuée.</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
           </aside>
         </div>
         <footer className="builder-footer"><span>BN2 HUB STUDIO <b>•</b> BN2 Consulting</span><span>CONFIGURATION NON PUBLIÉE</span></footer>
