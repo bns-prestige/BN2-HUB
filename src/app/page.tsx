@@ -3,10 +3,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import AdminSectionView from "@/components/admin-section-view";
 import { createClient } from "@/lib/supabase/client";
-import Link from "next/link";
 import {
-  Activity, Bell, BriefcaseBusiness, Building2, CalendarDays, ChevronDown, ChevronRight,
-  Clock3, ClipboardList, ExternalLink, FileText, HardDrive, LayoutDashboard, LifeBuoy,
+  Activity, Bell, BriefcaseBusiness, Building2, CalendarDays, ChevronRight,
+  Clock3, ClipboardList, FileText, HardDrive, LayoutDashboard, LifeBuoy,
   LogOut, Menu, Plus, Receipt, Search, Settings2, ShieldCheck, Users, WandSparkles, X,
 } from "lucide-react";
 
@@ -138,7 +137,7 @@ export default function AdminHome() {
           <div><div className="admin-brand-name">BN2 <span>HUB</span></div><div className="admin-brand-caption">CONSULTING PLATFORM</div></div>
           <button className="mobile-close" onClick={() => setMobileOpen(false)} aria-label="Fermer le menu"><X size={18}/></button>
         </div>
-        <div className="workspace-switch"><div className="workspace-symbol"><ShieldCheck size={16}/></div><div className="workspace-copy"><strong>BN2 Consulting</strong><span>Administration</span></div><ChevronDown size={14}/></div>
+        <div className="workspace-switch"><div className="workspace-symbol"><ShieldCheck size={16}/></div><div className="workspace-copy"><strong>BN2 Consulting</strong><span>Administration</span></div></div>
         <nav className="admin-nav" aria-label="Navigation administrateur">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -161,7 +160,7 @@ export default function AdminHome() {
         <header className="admin-topbar">
           <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu size={19}/></button><div className="admin-breadcrumb">BN2 HUB <ChevronRight size={13}/><strong>{active}</strong></div></div>
           <div className="topbar-right">
-            <Link className="preview-client-link" href="/portal"><ExternalLink size={14}/> Aperçu portail client</Link>
+            <button type="button" className="preview-client-link" onClick={() => setActive("Portails clients")}><Building2 size={14}/> Gérer les clients</button>
             {active === "Vue d'ensemble" && <label className="global-search"><Search size={15}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une demande..." aria-label="Rechercher une demande"/></label>}
             <div className="notification-wrap">
               <button className="top-icon-button" aria-label="Notifications" title="Notifications" onClick={() => void openNotifications()}><Bell size={17}/>{unreadNotifications>0&&<i/>}</button>
