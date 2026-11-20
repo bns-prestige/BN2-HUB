@@ -100,3 +100,38 @@ body{font-family:"Manrope",sans-serif;background:#eef3fb;color:#0a1630}
 .portal-control-footer>div{display:grid;gap:5px}.portal-control-footer strong{font-size:9px;color:#40546f}.portal-control-footer small{max-width:460px;font-size:8px;line-height:1.5;color:#8795a9}
 @media(max-width:950px){.portal-control-layout{grid-template-columns:1fr}.portal-client-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.portal-client-list>.panel-heading{grid-column:1/-1}.portal-client-choice{padding:9px 6px}.portal-client-choice>svg{display:none}}
 @media(max-width:620px){.portal-client-list{grid-template-columns:1fr}.portal-module-list{grid-template-columns:1fr}.portal-config-heading{flex-direction:column}.portal-domain-row>span{display:none}.portal-control-footer{align-items:flex-start;flex-direction:column}}
+
+/* Admin service desk */
+.preview-client-link{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #dce8f4;border-radius:7px;background:#f8fbff;color:#176eae;font-size:9px;font-weight:800;text-decoration:none;white-space:nowrap}
+.preview-client-link:hover{background:#edf6ff;border-color:#bcd8ef}
+.queue-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:14px}
+.queue-kpis article{display:grid;gap:5px;padding:14px 16px;border:1px solid #e0e8f2;border-radius:8px;background:#fff}
+.queue-kpis small{font-size:9px;color:#71819a}.queue-kpis strong{font:700 23px "Sora";color:#10213b}.queue-kpis span{font-size:8px;color:#8a98ac}
+.queue-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:13px;align-items:start}
+.queue-list-panel,.queue-detail-panel{padding:17px;min-width:0}
+.queue-list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+.queue-list-head h3{margin:0 0 4px;font:700 13px "Sora";color:#142844}.queue-list-head p{margin:0;font-size:9px;color:#8190a6}
+.queue-search{display:flex;align-items:center;gap:7px;padding:8px 9px;border:1px solid #e1e8f1;border-radius:6px;color:#8493a8}.queue-search input{width:120px;border:0;outline:0;background:transparent;font:500 9px "Manrope"}
+.queue-filters{display:flex;gap:5px;overflow-x:auto;padding:0 0 10px;border-bottom:1px solid #edf1f6}
+.queue-filters button{flex:none;padding:6px 8px;border:1px solid #e7edf4;border-radius:5px;background:#fff;color:#72829a;font-size:8px;font-weight:800}
+.queue-filters button.active{border-color:#c6e0f5;background:#edf6ff;color:#087dcc}
+.queue-ticket-list{display:grid;max-height:650px;overflow-y:auto}
+.queue-ticket-list>button{display:flex;align-items:flex-start;gap:10px;padding:13px 8px;border:0;border-bottom:1px solid #edf1f6;background:#fff;text-align:left}
+.queue-ticket-list>button.selected{background:#f4f9ff;box-shadow:inset 2px 0 #0b84d8}
+.queue-ticket-list>button>svg{margin-top:8px;color:#9aa8ba}
+.queue-priority-dot{width:7px;height:7px;flex:none;margin-top:5px;border-radius:50%}.queue-priority-dot.haute{background:#e15e67}.queue-priority-dot.normale{background:#d9a23d}.queue-priority-dot.basse{background:#6f9ecb}
+.queue-ticket-copy{display:grid;gap:5px;flex:1;min-width:0}.queue-ticket-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:#18324e}.queue-ticket-copy small{font-size:8px;color:#8594a9}.queue-ticket-copy>span{display:flex;align-items:center;gap:5px;font-size:8px;color:#8190a6}.queue-ticket-copy>span b{color:#c0c9d4}
+.queue-status-dot{width:6px;height:6px;border-radius:50%;background:#d4a348}.queue-status-dot.done{background:#1da574}.queue-status-dot.working{background:#6a4cff}.queue-status-dot.new{background:#0b84d8}
+.queue-empty{padding:35px 10px;text-align:center;color:#8493a8;font-size:9px}
+.queue-detail-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.queue-ref{font-size:8px;letter-spacing:.8px;font-weight:800;color:#8291a7}
+.queue-detail-panel h2{margin:14px 0 7px;font:700 17px "Sora";letter-spacing:-.5px;color:#10213b}
+.queue-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:9px;color:#7e8ea5}.queue-meta b{color:#c4ccd7}
+.queue-detail-block{padding:13px;margin:17px 0;border:1px solid #e9eef5;border-radius:7px;background:#f8faff}.queue-detail-block small{font-size:8px;font-weight:800;letter-spacing:1px;color:#8392a8}.queue-detail-block p{margin:7px 0 0;font-size:10px;line-height:1.65;color:#435a75}
+.queue-field{display:grid;gap:6px;margin:12px 0}.queue-field label{font-size:9px;font-weight:800;color:#536780}.queue-field select{padding:9px 10px;border:1px solid #e0e7f0;border-radius:6px;background:#fff;color:#243c58;font:500 9px "Manrope"}
+.queue-conversation{padding-top:14px;margin-top:15px;border-top:1px solid #edf1f6}.queue-conversation-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.queue-conversation-head h3{display:flex;align-items:center;gap:7px;margin:0;font:700 10px "Sora"}.queue-conversation-head span{font-size:8px;color:#8a98ac}
+.queue-conversation textarea{width:100%;padding:9px;border:1px solid #e0e7f0;border-radius:6px;resize:vertical;font:500 9px "Manrope";outline:0}.queue-conversation textarea:focus{border-color:#0b84d8;box-shadow:0 0 0 3px #0b84d815}
+.queue-conversation>.admin-primary-button{margin-top:8px;padding:8px 10px;font-size:9px}.queue-conversation>.admin-primary-button:disabled{opacity:.45;cursor:not-allowed}
+.queue-note{padding:9px 10px;margin-bottom:8px;border:1px solid #e9eef5;border-radius:6px;background:#fafcff}.queue-note strong{font-size:8px;color:#536780}.queue-note p{margin:5px 0 0;font-size:9px;color:#354e69}
+.queue-detail-foot{display:flex;justify-content:space-between;gap:10px;padding-top:13px;margin-top:14px;border-top:1px solid #edf1f6;color:#8392a7;font-size:8px}.queue-detail-foot span{display:flex;align-items:center;gap:5px}
+@media(max-width:1000px){.queue-layout{grid-template-columns:1fr}.queue-ticket-list{max-height:380px}}
+@media(max-width:720px){.queue-kpis{grid-template-columns:1fr 1fr}.queue-list-head{align-items:flex-start;flex-direction:column}.queue-search{width:100%}.queue-search input{width:100%}.preview-client-link{font-size:0;padding:8px}.preview-client-link svg{width:16px;height:16px}}
