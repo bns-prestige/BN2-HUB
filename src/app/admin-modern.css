@@ -71,3 +71,32 @@ body{font-family:"Manrope",sans-serif;background:#eef3fb;color:#0a1630}
 .builder-heading h1,.builder-brand,.preview-welcome h3{font-family:"Sora",sans-serif}
 @media(max-width:1200px){.admin-content{padding:26px 24px}}
 @media(max-width:680px){.admin-content{padding:22px 15px}.page-heading h1{font-size:25px}.admin-topbar{height:62px}}
+
+/* Client portal control centre */
+.portal-control-layout{display:grid;grid-template-columns:minmax(230px,.72fr) minmax(0,1.65fr);gap:14px;margin-bottom:14px;align-items:start}
+.portal-client-list,.portal-config-panel{padding:19px}
+.portal-client-choice{width:100%;display:flex;align-items:center;gap:10px;padding:12px 9px;border:1px solid transparent;border-top-color:#edf1f6;background:transparent;text-align:left;border-radius:7px;color:#5c6e89;transition:.18s}
+.portal-client-choice:hover{background:#f7faff}
+.portal-client-choice.selected{background:#edf6ff;border-color:#d8eafa;color:#0b84d8}
+.portal-client-avatar{width:34px;height:34px;display:grid;place-items:center;border-radius:8px;background:#e7f0fc;color:#235b9b;font-size:10px;font-weight:800}
+.portal-client-copy{display:grid;gap:4px;flex:1}.portal-client-copy strong{font-size:10px;color:#142844}.portal-client-copy small{font-size:9px;color:#8090a8}
+.portal-config-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:18px}
+.portal-config-heading h2{font:700 19px "Sora";letter-spacing:-.6px;margin:7px 0 5px;color:#0a1630}
+.portal-config-heading p{font-size:10px;color:#71819a;margin:0}
+.portal-status-toggle{display:flex;align-items:center;gap:7px;border:1px solid #e6eaf0;background:#f5f7fa;color:#6f7f96;padding:9px 11px;border-radius:6px;font-size:9px;font-weight:800}
+.portal-status-toggle.is-active{border-color:#ccebdc;background:#effaf4;color:#178453}
+.portal-domain-row{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid #e2eaf4;background:#f8fbff;border-radius:7px;color:#0b84d8;margin-bottom:20px}
+.portal-domain-row>div{display:grid;gap:4px;flex:1}.portal-domain-row small{font-size:8px;letter-spacing:1px;color:#8292a9;font-weight:800}.portal-domain-row strong{font-size:11px;color:#183552}.portal-domain-row>span{font-size:8px;letter-spacing:.6px;color:#8090a8;font-weight:800}
+.portal-module-heading{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.portal-module-heading h3{font:700 12px "Sora";margin:0 0 5px;color:#142844}.portal-module-heading p{font-size:9px;color:#71819a;margin:0}.portal-module-heading>span{font-size:9px;font-weight:800;color:#0b84d8}
+.portal-module-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.portal-module-row{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid #e5ebf3;border-radius:7px;background:#fff;text-align:left;min-width:0}
+.portal-module-row.enabled{border-color:#c9e2f7;background:#f6fbff}
+.portal-module-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:7px;background:#f0f4f9;color:#71819a;flex:none}
+.portal-module-row.enabled .portal-module-icon{background:#e4f2ff;color:#0b84d8}
+.portal-module-copy{display:grid;gap:4px;min-width:0;flex:1}.portal-module-copy strong{font-size:9px;color:#203650}.portal-module-copy small{font-size:8px;color:#8795a9;line-height:1.4}
+.portal-check{width:18px;height:18px;border:1px solid #d8e0eb;border-radius:5px;display:grid;place-items:center;color:white;flex:none}.portal-check.checked{background:#0b84d8;border-color:#0b84d8}
+.portal-control-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;padding-top:17px;margin-top:17px;border-top:1px solid #e9eef5}
+.portal-control-footer>div{display:grid;gap:5px}.portal-control-footer strong{font-size:9px;color:#40546f}.portal-control-footer small{max-width:460px;font-size:8px;line-height:1.5;color:#8795a9}
+@media(max-width:950px){.portal-control-layout{grid-template-columns:1fr}.portal-client-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.portal-client-list>.panel-heading{grid-column:1/-1}.portal-client-choice{padding:9px 6px}.portal-client-choice>svg{display:none}}
+@media(max-width:620px){.portal-client-list{grid-template-columns:1fr}.portal-module-list{grid-template-columns:1fr}.portal-config-heading{flex-direction:column}.portal-domain-row>span{display:none}.portal-control-footer{align-items:flex-start;flex-direction:column}}
