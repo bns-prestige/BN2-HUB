@@ -35,8 +35,9 @@ export default function StaffHome(){
  useEffect(()=>{void load();},[load]);
 
  async function updateTicket(id:string,status:string){
-  const {error:updateError}=await createClient().from("support_tickets").update({status}).eq("id",id);
-  if(updateError)setError(updateError.message);else{setNotice("Demande mise à jour.");await load();}
+  const response=await fetch("/api/tickets/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Mise à jour impossible.");else{setNotice("Demande mise à jour.");await load();}
  }
  async function updateIntervention(id:string,status:string){
   const {error:updateError}=await createClient().from("interventions").update({status}).eq("id",id);
