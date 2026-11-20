@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database as SupabaseDatabase } from "@/lib/supabase/database.types";
 import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
+import AuditLogViewer from "@/components/audit-log-viewer";
 import {
   ChevronRight, Copy, Database, FileText, Globe, Plus, Save, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
@@ -544,6 +545,7 @@ function StaffManagement(){
 export default function AdminSectionView({ active }: { active: string }) {
   if (active === "Demandes support") return <SupportQueue />;
   if (active === "Facturation") return <InvoiceManager />;
+  if (active === "Journal d'audit") return <AuditLogViewer />;
   if (active === "Équipe BN2") return <StaffManagement />;
   if (active === "Portails clients") return <ClientPortalControl />;
   return <LiveModuleSection active={active} />;
