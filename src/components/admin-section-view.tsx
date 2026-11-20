@@ -7,7 +7,7 @@ import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
 import AuditLogViewer from "@/components/audit-log-viewer";
 import {
-  ChevronRight, Copy, Database, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
+  ChevronLeft, ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
@@ -280,7 +280,7 @@ function LiveModuleSection({active}:{active:string}) {
     {name:"status",label:"Statut",type:"select",defaultValue:"planned",options:[{value:"planned",label:"Planifiée"},{value:"confirmed",label:"Confirmée"},{value:"in_progress",label:"En cours"},{value:"completed",label:"Terminée"},{value:"cancelled",label:"Annulée"}]},
    ],
   },
-  "Contrats & heures":{
+  "Contrats":{
    table:"service_contracts",select:"id,organization_id,name,contract_number,plan_name,status,starts_on,ends_on,included_hours,hourly_rate,monthly_price,billing_frequency,auto_renew,renewal_notice_days,support_sla_hours,organizations(name)",
    title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","Prix mensuel","État"],
    map:r=>[r.contract_number||r.name||"—",moduleOrganizationName(r),r.plan_name??"—",String(r.included_hours??0)+" h",r.monthly_price==null?"—":Number(r.monthly_price).toLocaleString("fr-BE",{style:"currency",currency:"EUR"}),r.status??"—"],
@@ -560,9 +560,143 @@ function StaffManagement(){
  </div>;
 }
 
-export default function AdminSectionView({ active }: { active: string }) {
+
+type WorkLogRow = {
+ id:string; worked_at:string; minutes:number; description:string; billable:boolean; organization_id:string; logged_by:string;
+ organizations:{name?:string}|{name?:string}[]|null;
+ service_contracts:{name?:string;contract_number?:string}|{name?:string;contract_number?:string}[]|null;
+ support_tickets:{ticket_number?:string;title?:string}|{ticket_number?:string;title?:string}[]|null;
+};
+type ProfileLabel={id:string;full_name:string|null;email:string|null};
+function firstRelation<T,>(value:T|T[]|null):T|null{return Array.isArray(value)?value[0]??null:value;}
+function WorkLogsSection(){
+ const [rows,setRows]=useState<WorkLogRow[]>([]);
+ const [profiles,setProfiles]=useState<Record<string,string>>({});
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState("");
+ const [search,setSearch]=useState("");
+ const [billable,setBillable]=useState("all");
+ const [period,setPeriod]=useState("30");
+ useEffect(()=>{
+  async function load(){
+   setLoading(true);setError("");
+   const supabase=createClient();
+   const {data,error}=await supabase.from("work_logs")
+    .select("id,worked_at,minutes,description,billable,organization_id,logged_by,organizations(name),service_contracts(name,contract_number),support_tickets(ticket_number,title)")
+    .order("worked_at",{ascending:false}).limit(500);
+   if(error){setError(error.message);setLoading(false);return;}
+   const items=(data??[]) as unknown as WorkLogRow[];
+   setRows(items);
+   const ids=[...new Set(items.map(item=>item.logged_by).filter(Boolean))];
+   if(ids.length){
+    const {data:people}=await supabase.from("profiles").select("id,full_name,email").in("id",ids);
+    const labels:Record<string,string>={};
+    for(const person of (people??[]) as ProfileLabel[])labels[person.id]=person.full_name||person.email||"Collaborateur";
+    setProfiles(labels);
+   }else setProfiles({});
+   setLoading(false);
+  }
+  void load();
+ },[]);
+ const cutoff=period==="all"?0:Date.now()-Number(period)*86400000;
+ const visible=rows.filter(row=>{
+  const org=firstRelation(row.organizations)?.name??"";
+  const contract=firstRelation(row.service_contracts);
+  const ticket=firstRelation(row.support_tickets);
+  const haystack=[row.description,org,profiles[row.logged_by]??"",contract?.name??"",contract?.contract_number??"",ticket?.ticket_number??"",ticket?.title??""].join(" ").toLowerCase();
+  return (billable==="all"||(billable==="yes"&&row.billable)||(billable==="no"&&!row.billable))&&new Date(row.worked_at).getTime()>=cutoff&&haystack.includes(search.toLowerCase());
+ });
+ const totalMinutes=visible.reduce((sum,row)=>sum+row.minutes,0);
+ const billableMinutes=visible.filter(row=>row.billable).reduce((sum,row)=>sum+row.minutes,0);
+ const hours=(minutes:number)=>{const h=Math.floor(minutes/60),m=minutes%60;return h? h+" h "+(m?m+" min":""):m+" min";};
+ function exportCsv(){
+  const data=[["Date","Collaborateur","Client","Contrat / demande","Description","Durée (minutes)","Facturable"],
+   ...visible.map(row=>{const contract=firstRelation(row.service_contracts);const ticket=firstRelation(row.support_tickets);return [new Date(row.worked_at).toLocaleString("fr-BE"),profiles[row.logged_by]??"Collaborateur",firstRelation(row.organizations)?.name??"Client",contract?.contract_number??contract?.name??ticket?.ticket_number??ticket?.title??"",row.description,String(row.minutes),row.billable?"Oui":"Non"];})];
+  const csv="\uFEFF"+data.map(line=>line.map(value=>'"'+String(value??"").replace(/"/g,'""')+'"').join(";")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  const anchor=document.createElement("a");anchor.href=url;anchor.download="bn2-heures-prestees.csv";document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+ }
+ return <div className="admin-content admin-section-content">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> SUIVI DU TEMPS</div><h1>Heures prestées</h1><p>Suivez les temps encodés par l&apos;équipe et les heures facturables.</p></div><button className="admin-primary-button" onClick={exportCsv} disabled={!visible.length}><Download size={15}/> Exporter CSV</button></div>
+  <div className="bn2-worklog-metrics">
+   <article className="admin-panel"><span><Clock3 size={15}/> Temps enregistré</span><strong>{hours(totalMinutes)}</strong><small>{visible.length} saisie(s) sur la période</small></article>
+   <article className="admin-panel"><span><Clock3 size={15}/> Temps facturable</span><strong>{hours(billableMinutes)}</strong><small>{totalMinutes?Math.round(billableMinutes/totalMinutes*100):0}% du temps affiché</small></article>
+   <article className="admin-panel"><span><Users size={15}/> Collaborateurs</span><strong>{new Set(visible.map(row=>row.logged_by)).size}</strong><small>Avec au moins une saisie</small></article>
+  </div>
+  <section className="admin-panel bn2-worklog-panel">
+   <div className="bn2-worklog-toolbar"><label className="bn2-worklog-search"><Search size={15}/><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Rechercher un collaborateur, client ou ticket..."/></label><select value={period} onChange={event=>setPeriod(event.target.value)} aria-label="Période"><option value="30">30 derniers jours</option><option value="90">90 derniers jours</option><option value="365">12 derniers mois</option><option value="all">Toute la période</option></select><select value={billable} onChange={event=>setBillable(event.target.value)} aria-label="Type d'heures"><option value="all">Toutes les heures</option><option value="yes">Facturables</option><option value="no">Non facturables</option></select></div>
+   {error&&<p className="client-notice" role="alert">{error}</p>}
+   {loading?<div className="queue-empty">Chargement des heures...</div>:visible.length===0?<div className="queue-empty">Aucune saisie ne correspond aux filtres.</div>:<div className="table-wrap"><table className="requests-table section-data-table"><thead><tr><th>DATE</th><th>COLLABORATEUR</th><th>CLIENT</th><th>CONTRAT / DEMANDE</th><th>DESCRIPTION</th><th>DURÉE</th><th>TYPE</th></tr></thead><tbody>{visible.map(row=>{const contract=firstRelation(row.service_contracts);const ticket=firstRelation(row.support_tickets);return <tr key={row.id}><td>{new Date(row.worked_at).toLocaleString("fr-BE",{dateStyle:"short",timeStyle:"short"})}</td><td><strong>{profiles[row.logged_by]??"Collaborateur"}</strong></td><td>{firstRelation(row.organizations)?.name??"—"}</td><td>{contract?.contract_number??contract?.name??ticket?.ticket_number??ticket?.title??"—"}</td><td>{row.description}</td><td><strong>{hours(row.minutes)}</strong></td><td><span className={"bn2-worklog-tag "+(row.billable?"billable":"nonbillable")}>{row.billable?"Facturable":"Non facturable"}</span></td></tr>;})}</tbody></table></div>}
+  </section>
+ </div>;
+}
+
+
+type CalendarIntervention={
+ id:string;title:string;description:string|null;status:string;scheduled_start:string|null;scheduled_end:string|null;location:string|null;assigned_to:string|null;
+ organizations:{name?:string}|{name?:string}[]|null;
+};
+function dateKey(date:Date){return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");}
+function CalendarSection({onNavigate}:{onNavigate:(section:string)=>void}){
+ const [events,setEvents]=useState<CalendarIntervention[]>([]);
+ const [profiles,setProfiles]=useState<Record<string,string>>({});
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState("");
+ const [month,setMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ const [selectedDay,setSelectedDay]=useState(()=>dateKey(new Date()));
+ useEffect(()=>{
+  async function load(){
+   setLoading(true);
+   const supabase=createClient();
+   const {data,error}=await supabase.from("interventions").select("id,title,description,status,scheduled_start,scheduled_end,location,assigned_to,organizations(name)").not("scheduled_start","is",null).order("scheduled_start",{ascending:true}).limit(500);
+   if(error){setError(error.message);setLoading(false);return;}
+   const items=(data??[]) as unknown as CalendarIntervention[];
+   setEvents(items);
+   const ids=[...new Set(items.map(item=>item.assigned_to).filter((id):id is string=>Boolean(id)))];
+   if(ids.length){
+    const {data:people}=await supabase.from("profiles").select("id,full_name,email").in("id",ids);
+    const labels:Record<string,string>={};
+    for(const person of (people??[]) as ProfileLabel[])labels[person.id]=person.full_name||person.email||"Technicien";
+    setProfiles(labels);
+   }
+   setLoading(false);
+  }
+  void load();
+ },[]);
+ const monthDays=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+ const offset=(new Date(month.getFullYear(),month.getMonth(),1).getDay()+6)%7;
+ const cellCount=Math.ceil((offset+monthDays)/7)*7;
+ const days=Array.from({length:cellCount},(_,index)=>new Date(month.getFullYear(),month.getMonth(),index-offset+1));
+ const eventsByDay=useMemo(()=>{const map=new Map<string,CalendarIntervention[]>();for(const event of events){if(!event.scheduled_start)continue;const key=dateKey(new Date(event.scheduled_start));map.set(key,[...(map.get(key)??[]),event]);}return map;},[events]);
+ const selectedEvents=eventsByDay.get(selectedDay)??[];
+ const selectedDate=new Date(selectedDay+"T12:00:00");
+ const shiftMonth=(delta:number)=>{const next=new Date(month.getFullYear(),month.getMonth()+delta,1);setMonth(next);setSelectedDay(dateKey(next));};
+ const statusLabel:Record<string,string>={planned:"Planifiée",confirmed:"Confirmée",in_progress:"En cours",completed:"Terminée",cancelled:"Annulée"};
+ return <div className="admin-content admin-section-content">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> PLANIFICATION</div><h1>Calendrier</h1><p>Visualisez les interventions planifiées et sélectionnez une journée pour voir les détails.</p></div><button className="admin-primary-button" onClick={()=>onNavigate("Interventions")}><Plus size={15}/> Planifier une intervention</button></div>
+  {error&&<p className="client-notice" role="alert">{error}</p>}
+  <div className="bn2-calendar-layout">
+   <section className="admin-panel bn2-calendar-panel">
+    <div className="bn2-calendar-toolbar"><div><strong>{month.toLocaleDateString("fr-BE",{month:"long",year:"numeric"})}</strong><small>{events.length} intervention(s) planifiée(s)</small></div><div><button onClick={()=>shiftMonth(-1)} aria-label="Mois précédent"><ChevronLeft size={17}/></button><button onClick={()=>{const today=new Date();setMonth(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDay(dateKey(today));}}>Aujourd&apos;hui</button><button onClick={()=>shiftMonth(1)} aria-label="Mois suivant"><ChevronRight size={17}/></button></div></div>
+    <div className="bn2-calendar-grid">
+     {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map(day=><div className="bn2-calendar-weekday" key={day}>{day}</div>)}
+     {days.map(day=>{const key=dateKey(day);const dayEvents=eventsByDay.get(key)??[];const inMonth=day.getMonth()===month.getMonth();return <button key={key} className={"bn2-calendar-day "+(!inMonth?"outside ":"")+(selectedDay===key?"selected ":"")+(key===dateKey(new Date())?"today":"")} onClick={()=>{setSelectedDay(key);if(!inMonth)setMonth(new Date(day.getFullYear(),day.getMonth(),1));}}><span>{day.getDate()}</span>{dayEvents.length>0&&<i>{dayEvents.length} intervention{dayEvents.length>1?"s":""}</i>}</button>;})}
+    </div>
+    {loading&&<div className="queue-empty">Chargement du calendrier...</div>}
+   </section>
+   <aside className="admin-panel bn2-calendar-day-panel">
+    <div className="panel-heading"><div><h3>{selectedDate.toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"})}</h3><p>Interventions de la journée</p></div><span className="section-record-count">{selectedEvents.length}</span></div>
+    {selectedEvents.length===0?<div className="queue-empty">Aucune intervention prévue ce jour.</div>:selectedEvents.map(event=><article className="bn2-calendar-event" key={event.id}><div><strong>{event.title}</strong><span>{firstRelation(event.organizations)?.name??"Client"}</span></div><small>{new Date(event.scheduled_start!).toLocaleTimeString("fr-BE",{hour:"2-digit",minute:"2-digit"})}{event.scheduled_end?" – "+new Date(event.scheduled_end).toLocaleTimeString("fr-BE",{hour:"2-digit",minute:"2-digit"}):""}</small><p>{event.location||"Lieu à confirmer"} · {profiles[event.assigned_to??""]??"Technicien non attribué"}</p><span className="bn2-worklog-tag">{statusLabel[event.status]??event.status}</span></article>)}
+   </aside>
+  </div>
+ </div>;
+}
+
+export default function AdminSectionView({ active, onNavigate }: { active: string; onNavigate:(section:string)=>void }) {
   if (active === "Demandes support") return <SupportQueue />;
   if (active === "Facturation") return <InvoiceManager />;
+  if (active === "Heures prestées") return <WorkLogsSection />;
+  if (active === "Calendrier") return <CalendarSection onNavigate={onNavigate} />;
   if (active === "Journal d'audit") return <AuditLogViewer />;
   if (active === "Équipe BN2") return <StaffManagement />;
   if (active === "Portails clients") return <ClientPortalControl />;
