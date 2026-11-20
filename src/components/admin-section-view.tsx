@@ -37,7 +37,7 @@ function SupportQueue() {
  const [selected,setSelected]=useState("");
  const [loading,setLoading]=useState(true);
  const [message,setMessage]=useState("");
- const [messages,setMessages]=useState<string[]>([]);
+ const [messages,setMessages]=useState<{body:string;is_internal:boolean}[]>([]);
  const [saving,setSaving]=useState(false);
  const current=tickets.find(ticket=>ticket.recordId===selected);
  const visible=tickets.filter(ticket=>(filter==="Toutes"||ticket.status===filter)&&[ticket.id,ticket.title,ticket.client,ticket.category].join(" ").toLowerCase().includes(search.toLowerCase()));
@@ -59,7 +59,7 @@ function SupportQueue() {
 
  useEffect(()=>{
   if(!selected)return;
-  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",selected).order("created_at",{ascending:true}).then(({data})=>setMessages(((data??[]) as {body:string}[]).map((item)=>item.body)));
+  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",selected).order("created_at",{ascending:true}) .then(({data})=>setMessages(((data??[]) as {body:string;is_internal:boolean}[]).map((item)=>({body:item.body,is_internal:item.is_internal}))))
  },[selected]);
 
  async function updateStatus(status:QueueStatus){
@@ -80,7 +80,7 @@ function SupportQueue() {
  async function addNote(){
   if(!current||!message.trim())return;setSaving(true);
   const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
-  if(user){const {error}=await supabase.from("ticket_messages").insert({ticket_id:current.recordId,organization_id:current.organizationId,sender_id:user.id,body:message.trim(),is_internal:true});if(!error){setMessages(items=>[...items,message.trim()]);setMessage("");}}
+  if(user){const {error}=await supabase.from("ticket_messages").insert({ticket_id:current.recordId,organization_id:current.organizationId,sender_id:user.id,body:message.trim(),is_internal:true});if(!error){setMessages(items=>[...items,{body:message.trim(),is_internal:true}]);setMessage("");}}
   setSaving(false);
  }
  return <div className="admin-content support-queue-page">
@@ -98,7 +98,7 @@ function SupportQueue() {
     <div className="queue-description"><p>{current.description}</p></div>
     <label className="queue-field-label">Statut<select value={current.status} disabled={saving} onChange={e=>void updateStatus(e.target.value as QueueStatus)}>{queueStatuses.map(status=><option key={status}>{status}</option>)}</select></label>
     <button className="admin-primary-button" disabled={saving} onClick={()=>void assignToMe()}><UserRound size={15}/> M&apos;attribuer cette demande</button>
-    <div className="queue-notes"><h3>Notes internes</h3>{messages.map((item,index)=><p key={index}>{item}</p>)}<textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Ajouter une note interne..." rows={3}/><button disabled={saving||!message.trim()} onClick={()=>void addNote()}><Send size={14}/> Ajouter la note</button></div>
+    <div className="queue-notes"><h3>Échanges & notes internes</h3>{messages.map((item,index)=><p key={index}><strong>{item.is_internal?"Note BN2":"Message client"}</strong> · {item.body}</p>)}<textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Ajouter une note interne..." rows={3}/><button disabled={saving||!message.trim()} onClick={()=>void addNote()}><Send size={14}/> Ajouter la note</button></div>
    </section>}
   </div>
  </div>;
