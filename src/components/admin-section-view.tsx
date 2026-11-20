@@ -7,7 +7,7 @@ import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
 import AuditLogViewer from "@/components/audit-log-viewer";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
+  ChevronLeft, ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
@@ -617,7 +617,7 @@ function WorkLogsSection(){
   const anchor=document.createElement("a");anchor.href=url;anchor.download="bn2-heures-prestees.csv";document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
  }
  return <div className="admin-content admin-section-content">
-  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> SUIVI DU TEMPS</div><h1>Heures prestées</h1><p>Suivez les temps encodés par l'équipe et les heures facturables.</p></div><button className="admin-primary-button" onClick={exportCsv} disabled={!visible.length}><Download size={15}/> Exporter CSV</button></div>
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> SUIVI DU TEMPS</div><h1>Heures prestées</h1><p>Suivez les temps encodés par l&apos;équipe et les heures facturables.</p></div><button className="admin-primary-button" onClick={exportCsv} disabled={!visible.length}><Download size={15}/> Exporter CSV</button></div>
   <div className="bn2-worklog-metrics">
    <article className="admin-panel"><span><Clock3 size={15}/> Temps enregistré</span><strong>{hours(totalMinutes)}</strong><small>{visible.length} saisie(s) sur la période</small></article>
    <article className="admin-panel"><span><Clock3 size={15}/> Temps facturable</span><strong>{hours(billableMinutes)}</strong><small>{totalMinutes?Math.round(billableMinutes/totalMinutes*100):0}% du temps affiché</small></article>
@@ -677,7 +677,7 @@ function CalendarSection({onNavigate}:{onNavigate:(section:string)=>void}){
   {error&&<p className="client-notice" role="alert">{error}</p>}
   <div className="bn2-calendar-layout">
    <section className="admin-panel bn2-calendar-panel">
-    <div className="bn2-calendar-toolbar"><div><strong>{month.toLocaleDateString("fr-BE",{month:"long",year:"numeric"})}</strong><small>{events.length} intervention(s) planifiée(s)</small></div><div><button onClick={()=>shiftMonth(-1)} aria-label="Mois précédent"><ChevronLeft size={17}/></button><button onClick={()=>{const today=new Date();setMonth(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDay(dateKey(today));}}>Aujourd'hui</button><button onClick={()=>shiftMonth(1)} aria-label="Mois suivant"><ChevronRight size={17}/></button></div></div>
+    <div className="bn2-calendar-toolbar"><div><strong>{month.toLocaleDateString("fr-BE",{month:"long",year:"numeric"})}</strong><small>{events.length} intervention(s) planifiée(s)</small></div><div><button onClick={()=>shiftMonth(-1)} aria-label="Mois précédent"><ChevronLeft size={17}/></button><button onClick={()=>{const today=new Date();setMonth(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDay(dateKey(today));}}>Aujourd&apos;hui</button><button onClick={()=>shiftMonth(1)} aria-label="Mois suivant"><ChevronRight size={17}/></button></div></div>
     <div className="bn2-calendar-grid">
      {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map(day=><div className="bn2-calendar-weekday" key={day}>{day}</div>)}
      {days.map(day=>{const key=dateKey(day);const dayEvents=eventsByDay.get(key)??[];const inMonth=day.getMonth()===month.getMonth();return <button key={key} className={"bn2-calendar-day "+(!inMonth?"outside ":"")+(selectedDay===key?"selected ":"")+(key===dateKey(new Date())?"today":"")} onClick={()=>{setSelectedDay(key);if(!inMonth)setMonth(new Date(day.getFullYear(),day.getMonth(),1));}}><span>{day.getDate()}</span>{dayEvents.length>0&&<i>{dayEvents.length} intervention{dayEvents.length>1?"s":""}</i>}</button>;})}
