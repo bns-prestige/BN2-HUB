@@ -44,7 +44,7 @@ export default function InitialSetupPage() {
       const supabase = createClient();
       const { data: { user: current } } = await supabase.auth.getUser();
       if (!current) throw new Error("Connectez-vous avec le compte que vous venez de créer.");
-      const { error: claimError } = await supabase.rpc("claim_initial_bn2_owner", { bootstrap_token: token.trim() });
+      const { error: claimError } = await supabase.from("owner_bootstrap_requests").insert({ bootstrap_token: token.trim() });
       if (claimError) throw new Error(claimError.message);
       await supabase.auth.refreshSession();
       setMessage("Accès propriétaire activé. Ouverture de BN2 HUB...");
