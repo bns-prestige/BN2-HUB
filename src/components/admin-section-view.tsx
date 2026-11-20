@@ -257,23 +257,43 @@ function ClientPortalControl() {
  </div>;
 }
 
+function LiveModuleSection({active}:{active:string}) {
+ const [rows,setRows]=useState<any[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState("");
+ const config:Record<string,{table:string;select:string;title:string;columns:string[];map:(row:any)=>string[]}> = {
+  "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
+  "Calendrier":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
+  "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name,r.organizations?.name??"Client",r.plan_name??"—",String(r.included_hours??0)+" h",r.status]},
+  "Parc informatique":{table:"assets",select:"id,asset_tag,name,category,status,manufacturer,model,organizations(name)",title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","État"],map:r=>[r.asset_tag??"—",r.name,r.organizations?.name??"Client",r.category,r.status]},
+  "Documents":{table:"documents",select:"id,name,category,mime_type,created_at,organizations(name)",title:"Documents partagés",columns:["Document","Client","Catégorie","Type","Ajouté le"],map:r=>[r.name,r.organizations?.name??"Client",r.category,r.mime_type??"—",new Date(r.created_at).toLocaleDateString("fr-BE")]},
+  "Équipe BN2":{table:"profiles",select:"id,full_name,email,is_active,created_at",title:"Comptes utilisateurs",columns:["Utilisateur","E-mail","Accès","Créé le"],map:r=>[r.full_name||"Utilisateur",r.email??"—",r.is_active?"Actif":"Désactivé",new Date(r.created_at).toLocaleDateString("fr-BE")]},
+  "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name,r.contact_email??"—",r.sector??"—",r.status]},
+ };
+ const current=config[active];
+ useEffect(()=>{
+  if(!current){setRows([]);setLoading(false);return;}
+  setLoading(true);setError("");
+  createClient().from(current.table).select(current.select).order("created_at",{ascending:false}).limit(100)
+   .then(({data,error})=>{if(error)setError(error.message);else setRows(data??[]);setLoading(false);});
+ },[active]);
+ if(active==="Paramètres")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Les contrôles de sécurité et de gestion de la plateforme.</p></div></div><div className="admin-settings-grid">{settings.map(item=>{const Icon=item.icon;return <article className="admin-panel settings-card" key={item.title}><span className="settings-card-icon"><Icon size={19}/></span><span className="settings-card-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><button type="button" disabled>Configuration à venir <ChevronRight size={14}/></button></article>;})}</div></div>;
+ if(active==="Hébergement")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">PLATEFORME · INFRASTRUCTURE</div><h1>Hébergement</h1><p>Services techniques utilisés par BN2 HUB.</p></div><span className="section-demo-label">CONFIGURATION ACTUELLE</span></div><section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>Infrastructure</h3><p>État de configuration, pas une mesure de disponibilité.</p></div></div><div className="section-info-grid"><div className="section-info-card"><Database size={18}/><div><strong>Supabase · région EU West</strong><p>Base PostgreSQL 17, Auth et stockage privé BN2.</p></div></div><div className="section-info-card"><Globe size={18}/><div><strong>Vercel · Next.js</strong><p>Application hébergée sur le projet bn-2-hub.</p></div></div><div className="section-info-card"><ShieldCheck size={18}/><div><strong>Isolation multi-tenant</strong><p>RLS activée sur les tables métier et documents privés.</p></div></div></div></section></div>;
+ if(!current)return <div className="admin-content"><div className="page-heading"><h1>{active}</h1><p>Module non configuré.</p></div></div>;
+ const values=rows.map(current.map);
+ return <div className="admin-content admin-section-content">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{current.title} enregistrés dans Supabase.</p></div><span className="section-demo-label">DONNÉES EN DIRECT</span></div>
+  <div className="section-metrics"><article className="admin-panel section-metric"><span>Enregistrements</span><strong>{rows.length}</strong><small>Résultats accessibles à votre compte</small></article></div>
+  <section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>{current.title}</h3><p>{loading?"Chargement des données...":error?"Erreur de chargement":"Données réelles de votre espace BN2."}</p></div><span className="section-record-count">{rows.length} éléments</span></div>
+   {error&&<p role="alert" className="client-notice">{error}</p>}
+   {!loading&&!error&&rows.length===0&&<div className="queue-empty">Aucun enregistrement pour le moment.</div>}
+   {rows.length>0&&<div className="table-wrap"><table className="requests-table section-data-table"><thead><tr>{current.columns.map(col=><th key={col}>{col.toUpperCase()}</th>)}</tr></thead><tbody>{rows.map((row,index)=><tr key={row.id??index}>{current.map(row).map((cell,index)=><td key={index}>{index===0?<strong>{cell}</strong>:cell}</td>)}</tr>)}</tbody></table></div>}
+  </section>
+ </div>;
+}
+
 export default function AdminSectionView({ active }: { active: string }) {
   if (active === "Demandes support") return <SupportQueue />;
   if (active === "Portails clients") return <ClientPortalControl />;
-  const data = sections[active];
-  if (!data) {
-    return <div className="admin-content admin-section-content">
-      <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Configurez les règles de fonctionnement de votre espace administrateur.</p></div></div>
-      <div className="admin-settings-grid">{settings.map((item) => {const Icon=item.icon;return <article className="admin-panel settings-card" key={item.title}><span className="settings-card-icon"><Icon size={19}/></span><span className="settings-card-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><button type="button" disabled>Configurer <ChevronRight size={14}/></button></article>;})}</div>
-      <div className="admin-panel settings-security-note"><ShieldCheck size={18}/><div><strong>Les réglages sensibles seront protégés par des permissions administrateur.</strong><p>Les modifications d&apos;accès et de sécurité seront journalisées et devront être confirmées.</p></div></div>
-    </div>;
-  }
-  return <div className="admin-content admin-section-content">
-    <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{data.intro}</p></div>{active === "Clients" || active === "Portails clients" ? <Link className="admin-primary-button" href="/client-builder"><Plus size={16}/> Créer un espace client</Link> : <div className="section-demo-label">{active === "Hébergement" ? "INFRASTRUCTURE À CONFIGURER" : "DONNÉES DE DÉMONSTRATION"}</div>}</div>
-    <div className="section-metrics">{data.metrics.map((metric) => <article className="admin-panel section-metric" key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.hint}</small></article>)}</div>
-    <section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>{active === "Clients" ? "Portefeuille clients" : active === "Demandes support" ? "File des demandes" : "Liste et suivi"}</h3><p>Vue de démonstration pour préparer la connexion aux données réelles.</p></div><span className="section-record-count">{data.rows.length} éléments</span></div>
-      <div className="table-wrap"><table className="requests-table section-data-table"><thead><tr>{data.columns.map((column) => <th key={column}>{column.toUpperCase()}</th>)}</tr></thead><tbody>{data.rows.map((row,index)=><tr key={index}>{row.cells.map((cell,i)=><td key={i}>{i===0?<strong>{cell}</strong>:cell}{i===0 && active!=="Demandes support" && <span>{active === "Clients" ? "Organisation cliente" : "Référence de suivi"}</span>}</td>)}</tr>)}</tbody></table></div>
-    </section>
-    <div className="section-info-grid"><div className="admin-panel section-info-card"><div className="section-info-icon"><Clock3 size={17}/></div><div><strong>Historique centralisé</strong><p>Les actions seront historisées par utilisateur et par organisation.</p></div></div><div className="admin-panel section-info-card"><div className="section-info-icon"><CircleAlert size={17}/></div><div><strong>Connexion métier à finaliser</strong><p>Ces exemples seront remplacés par les données Supabase après validation du schéma et des règles RLS.</p></div></div></div>
-  </div>;
+  return <LiveModuleSection active={active} />;
 }
