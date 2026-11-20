@@ -51,7 +51,7 @@ Deno.serve(async (request: Request) => {
   if (!target) {
     const { data: invite, error: inviteError } = await admin.auth.admin.generateLink({
       type: "invite", email,
-      options: { data: { full_name: fullName }, redirectTo: (Deno.env.get("SITE_URL") ?? "https://bn-2-hub-bns-prestiges-projects.vercel.app") + "/auth/callback?next=/portal" },
+      options: { data: { full_name: fullName }, redirectTo: (Deno.env.get("SITE_URL") ?? "https://bn-2-hub.vercel.app") + "/auth/callback?next=/portal" },
     });
     if (inviteError || !invite.user) return response({ error: inviteError?.message ?? "Invitation failed" }, origin, 400);
     target = invite.user;
