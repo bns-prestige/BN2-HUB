@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import AdminSectionView from "@/components/admin-section-view";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Bell, BriefcaseBusiness, Building2,
+  Activity, Bell, BriefcaseBusiness, Building2,
   CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, Receipt,
   ExternalLink, FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
   ShieldCheck, Users, X, WandSparkles,
@@ -30,7 +30,8 @@ const navigation = [
 
 type DashboardTicket = { id: string; subject: string; client: string; type: string; priority: string; status: string; time: string };
 type DashboardClient = { id: string; name: string; initials: string; plan: string; tickets: number; color: string };
-type DashboardStats = { clients: number; openTickets: number; interventions: number; hours: number; totalTickets: number };
+type DashboardStats = { clients: number; openTickets: number; interventions: number; hours: number; totalTickets: number; newTickets: number };
+type DashboardActivity = { id:string; title:string; description:string; time:string; action:string };
 
 export default function AdminHome() {
   const [active, setActive] = useState("Vue d'ensemble");
@@ -40,9 +41,37 @@ export default function AdminHome() {
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [tickets, setTickets] = useState<DashboardTicket[]>([]);
   const [clients, setClients] = useState<DashboardClient[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({ clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 });
+  const [stats, setStats] = useState<DashboardStats>({ clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0, newTickets: 0 });
+  const [activity,setActivity] = useState<DashboardActivity[]>([]);
+  const [ticketTitle,setTicketTitle] = useState("");
+  const [ticketDescription,setTicketDescription] = useState("");
+  const [ticketOrganization,setTicketOrganization] = useState("");
+  const [ticketCategory,setTicketCategory] = useState("Support informatique");
+  const [ticketPriority,setTicketPriority] = useState("normal");
+  const [ticketSaving,setTicketSaving] = useState(false);
+  const [ticketError,setTicketError] = useState("");
   const [dataLoaded, setDataLoaded] = useState(false);
-  useEffect(() => { fetch("/api/admin/overview", { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error("Chargement impossible"); return response.json(); }).then((data) => { setTickets(data.tickets ?? []); setClients(data.clients ?? []); setStats(data.stats ?? { clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0 }); setDataLoaded(true); }).catch(() => setDataLoaded(false)); }, []);
+  const loadDashboard = useCallback(async () => {
+    const response = await fetch("/api/admin/overview", { cache: "no-store" });
+    if (!response.ok) throw new Error("Chargement impossible");
+    const data = await response.json();
+    setTickets(data.tickets ?? []);
+    setClients(data.clients ?? []);
+    setStats(data.stats ?? { clients: 0, openTickets: 0, interventions: 0, hours: 0, totalTickets: 0, newTickets: 0 });
+    setActivity(data.activity ?? []);
+    setTicketOrganization((current) => current || data.clients?.[0]?.id || "");
+    setDataLoaded(true);
+  }, []);
+  useEffect(() => { void loadDashboard().catch(() => setDataLoaded(false)); }, [loadDashboard]);
+
+  async function createTicket(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setTicketError(""); setTicketSaving(true);
+    const response = await fetch("/api/admin/tickets", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({organizationId:ticketOrganization,title:ticketTitle,description:ticketDescription,category:ticketCategory,priority:ticketPriority}) });
+    const result = await response.json();
+    if (!response.ok) { setTicketError(result.error ?? "Création de la demande impossible."); setTicketSaving(false); return; }
+    setShowNewTicket(false); setTicketTitle(""); setTicketDescription(""); setTicketPriority("normal");
+    await loadDashboard(); setTicketSaving(false);
+  }
   async function signOut() { await createClient().auth.signOut(); window.location.assign("/login"); }
   const filteredTickets = useMemo(() => tickets.filter((ticket) =>
     [ticket.id, ticket.subject, ticket.client, ticket.type].join(" ").toLowerCase().includes(query.toLowerCase())
@@ -79,7 +108,7 @@ export default function AdminHome() {
           <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu size={20}/></button><div className="admin-breadcrumb">BN2 HUB <ChevronRight size={14}/><strong>{active}</strong></div></div>
           <div className="topbar-right"><Link className="preview-client-link" href="/portal"><ExternalLink size={14}/> Aperçu portail client</Link>
             <div className="global-search"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une demande..." aria-label="Rechercher une demande"/><kbd>⌘ K</kbd></div>
-            <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={18}/><i/></button>{showNotifications && <div className="notification-popover"><strong>Notifications</strong><p><span className="notification-dot"/> 2 nouvelles demandes attendent une vérification.</p><p><span className="notification-dot muted"/> Votre aperçu BN2 HUB est prêt.</p></div>}</div>
+            <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={18}/>{stats.newTickets>0&&<i/>}</button>{showNotifications && <div className="notification-popover"><strong>Notifications</strong><p><span className="notification-dot"/>{stats.newTickets} nouvelle(s) demande(s) à vérifier.</p><p><span className="notification-dot muted"/>{stats.openTickets} demande(s) encore ouvertes.</p><button onClick={()=>{setActive("Demandes support");setShowNotifications(false);}}>Ouvrir le support <ChevronRight size={13}/></button></div>}</div>
             <div className="top-user-avatar">NS</div>
           </div>
         </header>
@@ -89,22 +118,30 @@ export default function AdminHome() {
           <div className="overview-banner"><div className="banner-orb orb-one"/><div className="banner-orb orb-two"/><div className="banner-copy"><div className="banner-tag"><span/> VOTRE ESPACE DE PILOTAGE</div><h2>Bonjour, bienvenue dans BN2 HUB.</h2><p>Votre activité informatique, vos clients et vos interventions réunis au même endroit.</p></div><div className="banner-art"><div className="banner-art-card"><div className="art-card-top"><span/><span/><span/></div><div className="art-lines"><i/><i/><i/></div><div className="art-check"><CheckCircle2 size={20}/></div></div></div></div>
           <div className="section-heading"><div><h2>Votre activité</h2><p>Les indicateurs clés de votre espace de gestion.</p></div><button className="period-select">30 derniers jours <ChevronDown size={14}/></button></div>
           <div className="admin-metrics">
-            <article className="admin-metric"><div className="metric-label">Clients actifs <span className="metric-symbol purple"><Building2 size={17}/></span></div><div className="metric-number">{stats.clients}</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +2</span> ce mois-ci</div><div className="metric-spark spark-purple"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Demandes ouvertes <span className="metric-symbol amber"><LifeBuoy size={17}/></span></div><div className="metric-number">{stats.openTickets}</div><div className="metric-trend"><span className="trend-down"><ArrowDownRight size={14}/> -12%</span> vs mois dernier</div><div className="metric-spark spark-amber"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Interventions <span className="metric-symbol blue"><Activity size={17}/></span></div><div className="metric-number">{stats.interventions}</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +8%</span> vs mois dernier</div><div className="metric-spark spark-blue"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-            <article className="admin-metric"><div className="metric-label">Heures prestées <span className="metric-symbol green"><Clock3 size={17}/></span></div><div className="metric-number">{stats.hours}<span className="metric-unit">h</span></div><div className="metric-trend"><span className="trend-neutral">heures enregistrées</span> dans les interventions</div><div className="hours-progress"><span/></div></article>
+            <article className="admin-metric"><div className="metric-label">Clients actifs <span className="metric-symbol purple"><Building2 size={17}/></span></div><div className="metric-number">{stats.clients}</div><div className="metric-trend"><span className="trend-neutral">Entreprises actives</span></div></article>
+            <article className="admin-metric"><div className="metric-label">Demandes ouvertes <span className="metric-symbol amber"><LifeBuoy size={17}/></span></div><div className="metric-number">{stats.openTickets}</div><div className="metric-trend"><span className="trend-neutral">{stats.newTickets} nouvelles à traiter</span></div></article>
+            <article className="admin-metric"><div className="metric-label">Interventions <span className="metric-symbol blue"><Activity size={17}/></span></div><div className="metric-number">{stats.interventions}</div><div className="metric-trend"><span className="trend-neutral">Non annulées</span></div></article>
+            <article className="admin-metric"><div className="metric-label">Heures prestées <span className="metric-symbol green"><Clock3 size={17}/></span></div><div className="metric-number">{stats.hours}<span className="metric-unit">h</span></div><div className="metric-trend"><span className="trend-neutral">Temps saisi sur les 30 derniers jours</span></div></article>
           </div>
           <div className="dashboard-grid">
             <section className="admin-panel requests-panel"><div className="panel-heading"><div><h3>Demandes récentes</h3><p>Suivez les dernières demandes de vos clients.</p></div><button className="text-action" onClick={() => setActive("Demandes support")}>Toutes les demandes <ChevronRight size={14}/></button></div>
               <div className="table-wrap"><table className="requests-table"><thead><tr><th>DEMANDE</th><th>CLIENT</th><th>PRIORITÉ</th><th>STATUT</th><th>REÇUE</th></tr></thead><tbody>{filteredTickets.map((ticket) => <tr key={ticket.id}><td><strong>{ticket.subject}</strong><span>{ticket.id} · {ticket.type}</span></td><td>{ticket.client}</td><td><span className={`priority priority-${ticket.priority.toLowerCase()}`}><i/>{ticket.priority}</span></td><td><span className={`ticket-status status-${ticket.status.toLowerCase().replaceAll(" ", "-")}`}>{ticket.status}</span></td><td className="received-time">{ticket.time}</td></tr>)}</tbody></table>{filteredTickets.length === 0 && <div className="empty-state">Aucune demande ne correspond à votre recherche.</div>}</div>
             </section>
-            <section className="admin-panel clients-panel"><div className="panel-heading"><div><h3>Vos clients</h3><p>Vue rapide de votre portefeuille.</p></div><button className="round-action" aria-label="Voir les clients" onClick={() => setActive("Clients")}><ChevronRight size={16}/></button></div><div className="client-list">{clients.map((client) => <button className="client-row" key={client.name} onClick={() => setActive("Clients")}><div className={`client-avatar ${client.color}`}>{client.initials}</div><div className="client-details"><strong>{client.name}</strong><span>{client.plan}</span></div><span className="client-ticket-count">{client.tickets} <small>tickets</small></span></button>)}</div><button className="clients-link" onClick={() => setActive("Clients")}>Gérer les clients <ChevronRight size={14}/></button></section>
+            <section className="admin-panel clients-panel"><div className="panel-heading"><div><h3>Vos clients</h3><p>Vue rapide de votre portefeuille.</p></div><button className="round-action" aria-label="Voir les clients" onClick={() => setActive("Clients")}><ChevronRight size={16}/></button></div><div className="client-list">{clients.map((client) => <button className="client-row" key={client.id} onClick={() => setActive("Clients")}><div className={`client-avatar ${client.color}`}>{client.initials}</div><div className="client-details"><strong>{client.name}</strong><span>{client.plan}</span></div><span className="client-ticket-count">{client.tickets} <small>tickets</small></span></button>)}</div><button className="clients-link" onClick={() => setActive("Clients")}>Gérer les clients <ChevronRight size={14}/></button></section>
           </div>
-          <div className="bottom-grid"><section className="admin-panel quick-panel"><div className="panel-heading"><div><h3>Accès rapides</h3><p>Les actions les plus utilisées.</p></div></div><div className="quick-actions"><button onClick={() => setActive("Clients")}><span className="quick-icon quick-purple"><Plus size={18}/></span><span><strong>Ajouter un client</strong><small>Créer un nouvel espace client</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Calendrier")}><span className="quick-icon quick-blue"><CalendarDays size={18}/></span><span><strong>Planifier une intervention</strong><small>Organiser le travail de l&apos;équipe</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Contrats & heures")}><span className="quick-icon quick-green"><FileText size={18}/></span><span><strong>Consulter les contrats</strong><small>Suivre les forfaits et les heures</small></span><ChevronRight size={15}/></button></div></section><section className="admin-panel activity-panel"><div className="panel-heading"><div><h3>Activité récente</h3><p>Les derniers événements de la plateforme.</p></div><button className="round-action" aria-label="Voir l'activité"><ChevronRight size={16}/></button></div><div className="activity-feed"><div className="feed-item"><span className="feed-icon feed-purple"><Plus size={14}/></span><div><strong>Nouvelle demande reçue</strong><p>Atelier Nova · Accès boîte mail</p><small>Il y a 18 minutes</small></div></div><div className="feed-item"><span className="feed-icon feed-green"><CheckCircle2 size={14}/></span><div><strong>Intervention clôturée</strong><p>Groupe Horizon · Mise à jour poste</p><small>Hier à 15:32</small></div></div></div></section></div>
+          <div className="bottom-grid"><section className="admin-panel quick-panel"><div className="panel-heading"><div><h3>Accès rapides</h3><p>Les actions les plus utilisées.</p></div></div><div className="quick-actions"><button onClick={() => setActive("Clients")}><span className="quick-icon quick-purple"><Plus size={18}/></span><span><strong>Ajouter un client</strong><small>Créer un nouvel espace client</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Calendrier")}><span className="quick-icon quick-blue"><CalendarDays size={18}/></span><span><strong>Planifier une intervention</strong><small>Organiser le travail de l&apos;équipe</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Contrats & heures")}><span className="quick-icon quick-green"><FileText size={18}/></span><span><strong>Consulter les contrats</strong><small>Suivre les forfaits et les heures</small></span><ChevronRight size={15}/></button></div></section><section className="admin-panel activity-panel"><div className="panel-heading"><div><h3>Activité récente</h3><p>Les derniers événements de la plateforme.</p></div><button className="round-action" aria-label="Voir l'activité"><ChevronRight size={16}/></button></div><div className="activity-feed">{activity.length===0?<div className="empty-state">Aucune activité enregistrée pour le moment.</div>:activity.map((item)=><div className="feed-item" key={item.id}><span className="feed-icon feed-purple"><Activity size={14}/></span><div><strong>{item.title}</strong><p>{item.description}</p><small>{item.time}</small></div></div>)}</div></section></div>
           <footer className="admin-footer"><span>BN2 HUB <b>•</b> Une solution BN2 Consulting</span><span>APERÇU ADMINISTRATEUR · {dataLoaded ? "DONNÉES SUPABASE EN DIRECT" : "CHARGEMENT DES DONNÉES"}</span></footer>
         </div> : <AdminSectionView active={active}/>}
       </section>
-      {showNewTicket && <div className="modal-backdrop" onClick={() => setShowNewTicket(false)}><div className="new-request-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowNewTicket(false)} aria-label="Fermer"><X size={18}/></button><div className="modal-icon"><Plus size={20}/></div><h2>Nouvelle demande</h2><p>La création des demandes est gérée depuis le module de support.</p><label>Objet de la demande<input placeholder="Ex. : Configuration Microsoft 365" disabled/></label><label>Client<select disabled><option>Sélectionner un client</option></select></label><button className="admin-primary-button modal-submit" onClick={() => setShowNewTicket(false)}>Compris</button></div></div>}
+      {showNewTicket && <div className="modal-backdrop" onClick={() => setShowNewTicket(false)}><form className="new-request-modal" onSubmit={createTicket} onClick={(e) => e.stopPropagation()}><button type="button" className="modal-close" onClick={() => setShowNewTicket(false)} aria-label="Fermer"><X size={18}/></button><div className="modal-icon"><Plus size={20}/></div><h2>Nouvelle demande</h2><p>Créez une demande de support pour une entreprise cliente.</p>
+        <label>Objet de la demande<input required minLength={3} value={ticketTitle} onChange={e=>setTicketTitle(e.target.value)} placeholder="Ex. : Configuration Microsoft 365"/></label>
+        <label>Client<select required value={ticketOrganization} onChange={e=>setTicketOrganization(e.target.value)}><option value="">Sélectionner un client</option>{clients.map(client=><option key={client.id} value={client.id}>{client.name}</option>)}</select></label>
+        <label>Catégorie<select value={ticketCategory} onChange={e=>setTicketCategory(e.target.value)}><option>Support informatique</option><option>Microsoft 365</option><option>Réseau & Wi-Fi</option><option>Matériel</option><option>Cybersécurité</option><option>Autre demande</option></select></label>
+        <label>Priorité<select value={ticketPriority} onChange={e=>setTicketPriority(e.target.value)}><option value="low">Basse</option><option value="normal">Normale</option><option value="high">Haute</option><option value="urgent">Urgente</option></select></label>
+        <label>Description<textarea required minLength={5} rows={4} value={ticketDescription} onChange={e=>setTicketDescription(e.target.value)} placeholder="Décrivez le problème, le besoin et les éléments utiles..."/></label>
+        {ticketError&&<p role="alert" className="client-notice">{ticketError}</p>}
+        <button type="submit" className="admin-primary-button modal-submit" disabled={ticketSaving||!clients.length}>{ticketSaving?"Création...":"Créer la demande"}</button>
+      </form></div>}
     </main>
   );
 }
