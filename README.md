@@ -55,7 +55,15 @@ tsconfig.json
 ```
 
 ## État actuel
-Le dépôt contient le socle Next.js/TypeScript et une première maquette responsive du portail client. Les données affichées sont fictives : aucune authentification, action métier, API ou connexion Supabase n'est encore activée.
+Le dépôt contient le socle Next.js/TypeScript, le tableau de bord BN2 HUB Admin, les vues de gestion par module et le Studio de configuration des portails clients. Les écrans utilisent encore des données de démonstration. Le Studio propose une configuration interactive et un aperçu local ; le moteur IA, la sauvegarde Supabase, l'authentification et les actions métier ne sont pas encore activés.
+
+## Modules d'interface disponibles
+- Administration : vue d'ensemble, support, clients, interventions, contrats et heures, parc informatique, calendrier, équipe, documents et paramètres.
+- BN2 HUB Studio : identité de l'entreprise, secteur, description des besoins, sélection des modules, palette visuelle et aperçu du portail client.
+- Le portail client doit rester issu d'un template maîtrisé par BN2 HUB. L'IA pourra proposer une configuration, mais ne doit pas générer librement du code exécutable ni contourner les permissions.
+
+## Vérifications automatiques
+Le workflow GitHub Actions exécute ESLint, TypeScript (`tsc --noEmit`) et le build de production Next.js sur les pull requests et les branches de développement.
 
 ## Règles de sécurité
 - Toutes les tables métier exposées doivent appliquer RLS.
