@@ -5,12 +5,13 @@ import {
   Activity, ArrowDownRight, ArrowUpRight, Bell, BriefcaseBusiness, Building2,
   CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3,
   FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
-  ShieldCheck, Users, X,
+  ShieldCheck, Users, X, WandSparkles,
 } from "lucide-react";
 
 const navigation = [
   { label: "Vue d'ensemble", icon: LayoutDashboard, section: "PRINCIPAL" },
   { label: "Demandes support", icon: LifeBuoy, count: "8" },
+  { label: "Générateur IA", icon: WandSparkles, section: "OUTILS" },
   { label: "Clients", icon: Building2 },
   { label: "Interventions", icon: BriefcaseBusiness },
   { label: "Contrats & heures", icon: FileText },
@@ -58,7 +59,7 @@ export default function AdminHome() {
             const Icon = item.icon;
             return <div key={item.label}>
               {item.section && <div className="admin-nav-section">{item.section}</div>}
-              <button className={`admin-nav-item ${active === item.label ? "selected" : ""}`} onClick={() => {setActive(item.label); setMobileOpen(false);}}>
+              <button className={`admin-nav-item ${active === item.label ? "selected" : ""}`} onClick={() => {if (item.label === "Générateur IA") { window.location.href = "/client-builder"; return; } setActive(item.label); setMobileOpen(false);}}>
                 <Icon size={17} strokeWidth={1.8}/><span>{item.label}</span>{item.count && <span className="nav-count">{item.count}</span>}
               </button>
             </div>;
