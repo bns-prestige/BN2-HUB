@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Check, CheckCircle2, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, MessageSquare, Monitor, Plus, Power, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
+  Check, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, MessageSquare, Monitor, Plus, Power, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
 
 type Row = { cells: string[]; status?: string; priority?: string };
@@ -39,7 +39,7 @@ const sections: Record<string, Section> = {
     rows:[
       {cells:["BN2-2026-0042","Accès à la boîte mail partagée","Atelier Nova","Haute","Nouvelle"],priority:"Haute",status:"Nouvelle"},
       {cells:["BN2-2026-0041","Configuration du nouvel ordinateur","Groupe Horizon","Normale","En cours"],priority:"Normale",status:"En cours"},
-      {cells:["BN2-2026-0040","Ajout d'un utilisateur","Cabinet Dewael","Normale","À vérifier"],priority:"Normale",status:"À vérifier"},
+      {cells:["BN2-2026-0040","Ajout d&apos;un utilisateur","Cabinet Dewael","Normale","À vérifier"],priority:"Normale",status:"À vérifier"},
       {cells:["BN2-2026-0039","Problème de connexion VPN","Atelier Nova","Basse","Résolue"],priority:"Basse",status:"Résolue"},
     ],
   },
@@ -105,7 +105,7 @@ const sections: Record<string, Section> = {
     ],
   },
   Documents: {
-    intro: "Retrouvez les contrats, rapports d'intervention et documents partagés.",
+    intro: "Retrouvez les contrats, rapports d&apos;intervention et documents partagés.",
     metrics: [{label:"Documents",value:"48",hint:"Bibliothèque BN2"},{label:"À valider",value:"03",hint:"En attente de revue"},{label:"Partagés",value:"16",hint:"Avec les clients"}],
     columns:["Document","Client","Catégorie","Dernière mise à jour","État"],
     rows:[
@@ -117,7 +117,7 @@ const sections: Record<string, Section> = {
 };
 
 const settings = [
-  {icon:ShieldCheck,title:"Sécurité & accès",text:"Rôles, autorisations et politiques d'accès",tag:"Prioritaire"},
+  {icon:ShieldCheck,title:"Sécurité & accès",text:"Rôles, autorisations et politiques d&apos;accès",tag:"Prioritaire"},
   {icon:Users,title:"Gestion des utilisateurs",text:"Comptes administrateurs et membres BN2",tag:"Configuration"},
   {icon:Sparkles,title:"Assistant IA",text:"Modèle, instructions et sources autorisées",tag:"À configurer"},
   {icon:FileText,title:"Modèles de documents",text:"Contrats, rapports et modèles PDF",tag:"Configuration"},
@@ -129,7 +129,7 @@ type QueueTicket = { id:string; title:string; client:string; category:string; pr
 const queueSeed: QueueTicket[] = [
  {id:"BN2-2026-0042",title:"Accès à la boîte mail partagée",client:"Atelier Nova",category:"Microsoft 365",priority:"Haute",status:"Nouvelle",assignee:"Non attribuée",date:"Aujourd'hui · 09:42",description:"L'équipe ne parvient plus à ouvrir la boîte mail partagée info@atelier-nova.be depuis Outlook. Le problème touche deux collaborateurs."},
  {id:"BN2-2026-0041",title:"Configuration du nouvel ordinateur",client:"Groupe Horizon",category:"Matériel",priority:"Normale",status:"En cours",assignee:"Yanis Martin",date:"Hier · 16:18",description:"Préparer le nouvel ordinateur portable et installer les applications nécessaires pour le nouveau collaborateur."},
- {id:"BN2-2026-0040",title:"Ajout d'un utilisateur",client:"Cabinet Dewael",category:"Comptes & accès",priority:"Normale",status:"À vérifier",assignee:"Sarah Benali",date:"Hier · 11:06",description:"Créer un compte professionnel et donner accès aux dossiers partagés du cabinet."},
+ {id:"BN2-2026-0040",title:"Ajout d&apos;un utilisateur",client:"Cabinet Dewael",category:"Comptes & accès",priority:"Normale",status:"À vérifier",assignee:"Sarah Benali",date:"Hier · 11:06",description:"Créer un compte professionnel et donner accès aux dossiers partagés du cabinet."},
  {id:"BN2-2026-0039",title:"Problème de connexion VPN",client:"Atelier Nova",category:"Réseau",priority:"Basse",status:"En attente du client",assignee:"Nadir Saâdi",date:"18 nov. · 14:20",description:"La connexion VPN se coupe après quelques minutes. Des informations complémentaires ont été demandées au client."},
  {id:"BN2-2026-0038",title:"Mise à jour des postes",client:"Groupe Horizon",category:"Maintenance",priority:"Basse",status:"Résolue",assignee:"Yanis Martin",date:"17 nov. · 10:15",description:"Installation des mises à jour de sécurité sur les postes utilisateurs."},
 ];
