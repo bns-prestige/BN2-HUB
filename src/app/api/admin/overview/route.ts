@@ -16,7 +16,7 @@ export async function GET() {
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).not("status", "in", '("resolved","closed")'),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }),
     supabase.from("interventions").select("id", { count: "exact", head: true }).not("status", "eq", "cancelled"),
-    supabase.from("work_logs").select("minutes").gte("created_at", since),
+    supabase.from("work_logs").select("minutes").gte("worked_at", since),
     supabase.from("support_tickets").select("id,ticket_number,title,category,priority,status,created_at,organization_id,organizations(name)").order("created_at", { ascending: false }).limit(6),
     supabase.from("support_tickets").select("organization_id"),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "new"),
