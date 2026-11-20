@@ -7,7 +7,7 @@ import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
 import AuditLogViewer from "@/components/audit-log-viewer";
 import {
-  ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
+  CalendarDays, ChevronLeft, ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
@@ -631,10 +631,72 @@ function WorkLogsSection(){
  </div>;
 }
 
-export default function AdminSectionView({ active }: { active: string }) {
+
+type CalendarIntervention={
+ id:string;title:string;description:string|null;status:string;scheduled_start:string|null;scheduled_end:string|null;location:string|null;assigned_to:string|null;
+ organizations:{name?:string}|{name?:string}[]|null;
+};
+function dateKey(date:Date){return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");}
+function CalendarSection({onNavigate}:{onNavigate:(section:string)=>void}){
+ const [events,setEvents]=useState<CalendarIntervention[]>([]);
+ const [profiles,setProfiles]=useState<Record<string,string>>({});
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState("");
+ const [month,setMonth]=useState(()=>new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ const [selectedDay,setSelectedDay]=useState(()=>dateKey(new Date()));
+ useEffect(()=>{
+  async function load(){
+   setLoading(true);
+   const supabase=createClient();
+   const {data,error}=await supabase.from("interventions").select("id,title,description,status,scheduled_start,scheduled_end,location,assigned_to,organizations(name)").not("scheduled_start","is",null).order("scheduled_start",{ascending:true}).limit(500);
+   if(error){setError(error.message);setLoading(false);return;}
+   const items=(data??[]) as unknown as CalendarIntervention[];
+   setEvents(items);
+   const ids=[...new Set(items.map(item=>item.assigned_to).filter((id):id is string=>Boolean(id)))];
+   if(ids.length){
+    const {data:people}=await supabase.from("profiles").select("id,full_name,email").in("id",ids);
+    const labels:Record<string,string>={};
+    for(const person of (people??[]) as ProfileLabel[])labels[person.id]=person.full_name||person.email||"Technicien";
+    setProfiles(labels);
+   }
+   setLoading(false);
+  }
+  void load();
+ },[]);
+ const monthDays=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+ const offset=(new Date(month.getFullYear(),month.getMonth(),1).getDay()+6)%7;
+ const cellCount=Math.ceil((offset+monthDays)/7)*7;
+ const days=Array.from({length:cellCount},(_,index)=>new Date(month.getFullYear(),month.getMonth(),index-offset+1));
+ const eventsByDay=useMemo(()=>{const map=new Map<string,CalendarIntervention[]>();for(const event of events){if(!event.scheduled_start)continue;const key=dateKey(new Date(event.scheduled_start));map.set(key,[...(map.get(key)??[]),event]);}return map;},[events]);
+ const selectedEvents=eventsByDay.get(selectedDay)??[];
+ const selectedDate=new Date(selectedDay+"T12:00:00");
+ const shiftMonth=(delta:number)=>{const next=new Date(month.getFullYear(),month.getMonth()+delta,1);setMonth(next);setSelectedDay(dateKey(next));};
+ const statusLabel:Record<string,string>={planned:"Planifiée",confirmed:"Confirmée",in_progress:"En cours",completed:"Terminée",cancelled:"Annulée"};
+ return <div className="admin-content admin-section-content">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> PLANIFICATION</div><h1>Calendrier</h1><p>Visualisez les interventions planifiées et sélectionnez une journée pour voir les détails.</p></div><button className="admin-primary-button" onClick={()=>onNavigate("Interventions")}><Plus size={15}/> Planifier une intervention</button></div>
+  {error&&<p className="client-notice" role="alert">{error}</p>}
+  <div className="bn2-calendar-layout">
+   <section className="admin-panel bn2-calendar-panel">
+    <div className="bn2-calendar-toolbar"><div><strong>{month.toLocaleDateString("fr-BE",{month:"long",year:"numeric"})}</strong><small>{events.length} intervention(s) planifiée(s)</small></div><div><button onClick={()=>shiftMonth(-1)} aria-label="Mois précédent"><ChevronLeft size={17}/></button><button onClick={()=>{const today=new Date();setMonth(new Date(today.getFullYear(),today.getMonth(),1));setSelectedDay(dateKey(today));}}>Aujourd'hui</button><button onClick={()=>shiftMonth(1)} aria-label="Mois suivant"><ChevronRight size={17}/></button></div></div>
+    <div className="bn2-calendar-grid">
+     {["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"].map(day=><div className="bn2-calendar-weekday" key={day}>{day}</div>)}
+     {days.map(day=>{const key=dateKey(day);const dayEvents=eventsByDay.get(key)??[];const inMonth=day.getMonth()===month.getMonth();return <button key={key} className={"bn2-calendar-day "+(!inMonth?"outside ":"")+(selectedDay===key?"selected ":"")+(key===dateKey(new Date())?"today":"")} onClick={()=>{setSelectedDay(key);if(!inMonth)setMonth(new Date(day.getFullYear(),day.getMonth(),1));}}><span>{day.getDate()}</span>{dayEvents.length>0&&<i>{dayEvents.length} intervention{dayEvents.length>1?"s":""}</i>}</button>;})}
+    </div>
+    {loading&&<div className="queue-empty">Chargement du calendrier...</div>}
+   </section>
+   <aside className="admin-panel bn2-calendar-day-panel">
+    <div className="panel-heading"><div><h3>{selectedDate.toLocaleDateString("fr-BE",{weekday:"long",day:"numeric",month:"long"})}</h3><p>Interventions de la journée</p></div><span className="section-record-count">{selectedEvents.length}</span></div>
+    {selectedEvents.length===0?<div className="queue-empty">Aucune intervention prévue ce jour.</div>:selectedEvents.map(event=><article className="bn2-calendar-event" key={event.id}><div><strong>{event.title}</strong><span>{firstRelation(event.organizations)?.name??"Client"}</span></div><small>{new Date(event.scheduled_start!).toLocaleTimeString("fr-BE",{hour:"2-digit",minute:"2-digit"})}{event.scheduled_end?" – "+new Date(event.scheduled_end).toLocaleTimeString("fr-BE",{hour:"2-digit",minute:"2-digit"}):""}</small><p>{event.location||"Lieu à confirmer"} · {profiles[event.assigned_to??""]??"Technicien non attribué"}</p><span className="bn2-worklog-tag">{statusLabel[event.status]??event.status}</span></article>)}
+   </aside>
+  </div>
+ </div>;
+}
+
+export default function AdminSectionView({ active, onNavigate }: { active: string; onNavigate:(section:string)=>void }) {
   if (active === "Demandes support") return <SupportQueue />;
   if (active === "Facturation") return <InvoiceManager />;
   if (active === "Heures prestées") return <WorkLogsSection />;
+  if (active === "Calendrier") return <CalendarSection onNavigate={onNavigate} />;
   if (active === "Journal d'audit") return <AuditLogViewer />;
   if (active === "Équipe BN2") return <StaffManagement />;
   if (active === "Portails clients") return <ClientPortalControl />;
