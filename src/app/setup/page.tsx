@@ -59,7 +59,7 @@ export default function InitialSetupPage() {
     <div className="bn2-login-brand"><span>BN2</span><div><strong>BN2 HUB</strong><small>INITIALISATION SÉCURISÉE</small></div></div>
     <div className="bn2-login-icon"><ShieldCheck size={23}/></div>
     <p className="bn2-login-eyebrow">PREMIÈRE CONFIGURATION</p>
-    <h1>Activer l'espace propriétaire.</h1>
+    <h1>Activer l&apos;espace propriétaire.</h1>
     <p className="bn2-login-subtitle">Créez le premier compte BN2, puis validez le code de configuration à usage unique.</p>
     {!user ? <form onSubmit={signup}>
       <label>Nom complet<input value={name} onChange={e=>setName(e.target.value)} required minLength={2} placeholder="Votre nom"/></label>
@@ -68,10 +68,10 @@ export default function InitialSetupPage() {
       <button type="submit" disabled={loading}><UserPlus size={16}/> {loading ? "Création..." : "Créer le premier compte"}</button>
     </form> : <form onSubmit={claim}>
       <label>Code propriétaire à usage unique<div className="bn2-login-input"><KeyRound size={17}/><input value={token} onChange={e=>setToken(e.target.value)} required autoComplete="off" placeholder="Code fourni par BN2"/></div></label>
-      <button type="submit" disabled={loading}>{loading ? "Activation..." : "Activer l'accès propriétaire"}</button>
+      <button type="submit" disabled={loading}>{loading ? "Activation..." : "Activer l&apos;accès propriétaire"}</button>
     </form>}
     {error && <div className="bn2-login-error">{error}</div>}
     {message && <div className="bn2-login-error" style={{borderColor:"#cfe8dc",background:"#f2fbf6",color:"#17633f"}}>{message}</div>}
-    <p className="bn2-login-footnote">Cette activation n'est possible que pour le premier utilisateur et ne peut être utilisée qu'une seule fois.</p>
+    <p className="bn2-login-footnote">Cette activation n&apos;est possible que pour le premier utilisateur et ne peut être utilisée qu&apos;une seule fois.</p>
   </section><footer>BN2 HUB <span>•</span> Une solution BN2 Consulting</footer></main>;
 }
