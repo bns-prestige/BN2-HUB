@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyTicketCreated } from "@/lib/ticket-notifications";
 
 export const dynamic="force-dynamic";
 
@@ -23,5 +24,6 @@ export async function POST(request:Request){
   due_at:typeof body.dueAt==="string"&&body.dueAt?body.dueAt:null,
  }).select("id,ticket_number,title,status,priority,created_at").single();
  if(error||!ticket)return NextResponse.json({error:error?.message??"ticket_create_failed"},{status:400});
- return NextResponse.json({ticket},{status:201});
+ const email=await notifyTicketCreated(organizationId,ticket,user.id);
+ return NextResponse.json({ticket,emailSent:email.sent},{status:201});
 }
