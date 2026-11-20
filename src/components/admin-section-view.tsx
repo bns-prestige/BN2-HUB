@@ -147,7 +147,7 @@ function ClientPortalControl() {
    const result=await response.json();
    if(!response.ok)throw new Error(result.error??"Invitation impossible.");
    setInvitationUrl(result.actionLink??"");
-   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d'invitation généré. Copiez-le et envoyez-le au client.");
+   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d&apos;invitation généré. Copiez-le et envoyez-le au client.");
    setMemberEmail("");setMemberName("");
   }catch(cause){setInviteError(cause instanceof Error?cause.message:"Invitation impossible.");}
   finally{setInviting(false);}
@@ -157,14 +157,14 @@ function ClientPortalControl() {
   <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Portails clients</h1><p>Créez des organisations et donnez accès aux collaborateurs de vos clients.</p></div><span className="section-demo-label">SUPABASE EN DIRECT</span></div>
   <div className="portal-control-layout">
    <section className="admin-panel portal-config-panel">
-    <div className="portal-config-heading"><div><div className="page-eyebrow">NOUVELLE ORGANISATION</div><h2>Créer un espace client</h2><p>L'organisation sera enregistrée dans la base BN2.</p></div></div>
+    <div className="portal-config-heading"><div><div className="page-eyebrow">NOUVELLE ORGANISATION</div><h2>Créer un espace client</h2><p>L&apos;organisation sera enregistrée dans la base BN2.</p></div></div>
     <form className="builder-fields" onSubmit={createOrganization}>
-     <label>Nom de l'entreprise<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder="Ex. : Atelier Nova"/></label>
+     <label>Nom de l&apos;entreprise<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder="Ex. : Atelier Nova"/></label>
      <label>E-mail de contact<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="contact@entreprise.be"/></label>
-     <label>Secteur d'activité<select value={sector} onChange={e=>setSector(e.target.value)}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select></label>
-     <label className="builder-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Contexte et besoins de l'entreprise"/></label>
+     <label>Secteur d&apos;activité<select value={sector} onChange={e=>setSector(e.target.value)}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select></label>
+     <label className="builder-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Contexte et besoins de l&apos;entreprise"/></label>
      {error&&<p role="alert" className="client-notice">{error}</p>}
-     <button className="admin-primary-button" type="submit" disabled={saving||!name.trim()}><Plus size={16}/>{saving?"Création...":"Créer l'organisation"}</button>
+     <button className="admin-primary-button" type="submit" disabled={saving||!name.trim()}><Plus size={16}/>{saving?"Création...":"Créer l&apos;organisation"}</button>
     </form>
    </section>
    <section className="admin-panel portal-client-list">
@@ -179,15 +179,15 @@ function ClientPortalControl() {
    </section>
   </div>
   <section className="admin-panel portal-config-panel" style={{marginTop:20}}>
-   <div className="portal-config-heading"><div><div className="page-eyebrow">ACCÈS UTILISATEUR</div><h2>{selectedOrganization? "Inviter un collaborateur · "+selectedOrganization.name : "Sélectionnez une organisation"}</h2><p>Un lien d'invitation sécurisé sera généré pour le compte client.</p></div></div>
+   <div className="portal-config-heading"><div><div className="page-eyebrow">ACCÈS UTILISATEUR</div><h2>{selectedOrganization? "Inviter un collaborateur · "+selectedOrganization.name : "Sélectionnez une organisation"}</h2><p>Un lien d&apos;invitation sécurisé sera généré pour le compte client.</p></div></div>
    <form className="builder-fields" onSubmit={inviteMember}>
     <label>Nom complet<input value={memberName} onChange={e=>setMemberName(e.target.value)} required placeholder="Nom du collaborateur"/></label>
     <label>Adresse e-mail<input type="email" value={memberEmail} onChange={e=>setMemberEmail(e.target.value)} required placeholder="collaborateur@entreprise.be"/></label>
     <label>Rôle dans le portail<select value={memberRole} onChange={e=>setMemberRole(e.target.value)}><option value="member">Collaborateur</option><option value="agent">Référent IT</option><option value="admin">Administrateur client</option></select></label>
     {inviteError&&<p role="alert" className="client-notice">{inviteError}</p>}
     {inviteMessage&&<p className="client-notice">{inviteMessage}</p>}
-    {invitationUrl&&<div className="builder-fields"><label>Lien d'invitation<input readOnly value={invitationUrl}/></label><button type="button" className="admin-primary-button" onClick={()=>void navigator.clipboard.writeText(invitationUrl)}>Copier le lien d'invitation</button></div>}
-    <button className="admin-primary-button" type="submit" disabled={inviting||!selectedOrganizationId||!memberEmail.trim()}><Users size={16}/>{inviting?"Préparation...":"Créer l'accès et générer le lien"}</button>
+    {invitationUrl&&<div className="builder-fields"><label>Lien d'invitation<input readOnly value={invitationUrl}/></label><button type="button" className="admin-primary-button" onClick={()=>void navigator.clipboard.writeText(invitationUrl)}>Copier le lien d&apos;invitation</button></div>}
+    <button className="admin-primary-button" type="submit" disabled={inviting||!selectedOrganizationId||!memberEmail.trim()}><Users size={16}/>{inviting?"Préparation...":"Créer l&apos;accès et générer le lien"}</button>
    </form>
   </section>
  </div>;
