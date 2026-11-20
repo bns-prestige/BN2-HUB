@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   ChevronRight, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
@@ -10,7 +10,8 @@ type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du cli
 type QueueTicket = { recordId:string; organizationId:string; id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
 type TicketDbRecord = { id:string; ticket_number:string; organization_id:string; title:string; description:string; category:string; priority:string; status:string; created_at:string; assigned_to:string|null; organizations:{name?:string}|{name?:string}[]|null };
 type OrganizationRecord = { id:string; name:string; slug:string; sector:string|null; description:string|null; contact_email:string|null; status:string; created_at:string; enabled_modules:unknown };
-type ModuleRecord = { id?:string; title?:string; status?:string; scheduled_start?:string|null; location?:string|null; organizations:{name?:string}|{name?:string}[]|null; name?:string; plan_name?:string|null; included_hours?:number|null; asset_tag?:string|null; category?:string; mime_type?:string|null; created_at?:string; full_name?:string; email?:string|null; is_active?:boolean; contact_email?:string|null; sector?:string|null };
+type ModuleRecord = { id?:string; title?:string; status?:string; scheduled_start?:string|null; location?:string|null; organizations?:{name?:string}|{name?:string}[]|null; name?:string; plan_name?:string|null; included_hours?:number|null; asset_tag?:string|null; category?:string; mime_type?:string|null; created_at?:string; full_name?:string; email?:string|null; is_active?:boolean; contact_email?:string|null; sector?:string|null };
+function moduleOrganizationName(row:ModuleRecord){return Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client";}
 const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 
 const settings = [
@@ -196,15 +197,15 @@ function LiveModuleSection({active}:{active:string}) {
  const [rows,setRows]=useState<ModuleRecord[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
- const config:Record<string,{table:string;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}> = {
-  "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
+ const config=useMemo<Record<string,{table:string;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}>>(()=>({
+  "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
   "Calendrier":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
-  "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name,r.organizations?.name??"Client",r.plan_name??"—",String(r.included_hours??0)+" h",r.status]},
-  "Parc informatique":{table:"assets",select:"id,asset_tag,name,category,status,manufacturer,model,organizations(name)",title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","État"],map:r=>[r.asset_tag??"—",r.name,r.organizations?.name??"Client",r.category,r.status]},
+  "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name??"—",moduleOrganizationName(r)?.name??"Client",r.plan_name??"—",String(r.included_hours??0)+" h",r.status]},
+  "Parc informatique":{table:"assets",select:"id,asset_tag,name,category,status,manufacturer,model,organizations(name)",title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","État"],map:r=>[r.asset_tag??"—",r.name,r.organizations?.name??"Client",r.category??"—",r.status??"—"]},
   "Documents":{table:"documents",select:"id,name,category,mime_type,created_at,organizations(name)",title:"Documents partagés",columns:["Document","Client","Catégorie","Type","Ajouté le"],map:r=>[r.name,r.organizations?.name??"Client",r.category,r.mime_type??"—",new Date(r.created_at).toLocaleDateString("fr-BE")]},
-  "Équipe BN2":{table:"profiles",select:"id,full_name,email,is_active,created_at",title:"Comptes utilisateurs",columns:["Utilisateur","E-mail","Accès","Créé le"],map:r=>[r.full_name||"Utilisateur",r.email??"—",r.is_active?"Actif":"Désactivé",new Date(r.created_at).toLocaleDateString("fr-BE")]},
-  "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name,r.contact_email??"—",r.sector??"—",r.status]},
- };
+  "Équipe BN2":{table:"profiles",select:"id,full_name,email,is_active,created_at",title:"Comptes utilisateurs",columns:["Utilisateur","E-mail","Accès","Créé le"],map:r=>[r.full_name||"Utilisateur",r.email??"—",r.is_active?"Actif":"Désactivé",r.created_at?new Date(r.created_at).toLocaleDateString("fr-BE"):"—"]},
+  "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name??"—",r.contact_email??"—",r.sector??"—",r.status??"—"]},
+ }),[]);
  const current=config[active];
  useEffect(()=>{
   if(!current){setRows([]);setLoading(false);return;}
