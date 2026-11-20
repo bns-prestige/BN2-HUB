@@ -34,6 +34,7 @@ type PortalAsset={id:string;asset_tag:string|null;name:string;category:string;st
 type PortalInvoice={id:string;invoice_number:string;status:string;issue_date:string;due_date:string|null;total:number;currency:string};
 type PortalDocument={id:string;name:string;storage_path:string;mime_type:string|null;size_bytes:number|null;category:string;created_at:string};
 type PortalMessage={id:string;body:string;created_at:string;sender_id:string};
+type PortalGuide={id:string;title:string;content:string;tags:string[];updated_at:string};
 type PortalInvoiceItem={id:string;description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number};
 
 const statusClass: Record<RequestItem["status"], string> = {
@@ -47,6 +48,7 @@ export default function ClientPortalPage() {
   const [assets,setAssets]=useState<PortalAsset[]>([]);
   const [invoices,setInvoices]=useState<PortalInvoice[]>([]);
   const [documents,setDocuments]=useState<PortalDocument[]>([]);
+  const [guides,setGuides]=useState<PortalGuide[]>([]);
   const [messages,setMessages]=useState<PortalMessage[]>([]);
   const [newMessage,setNewMessage]=useState("");
   const [sendingMessage,setSendingMessage]=useState(false);
@@ -88,13 +90,14 @@ export default function ClientPortalPage() {
       setProfileRole(membership.role === "admin" || membership.role === "owner" ? "Administrateur" : "Collaborateur");
       const org = Array.isArray(membership.organizations) ? membership.organizations[0] : membership.organizations;
       if (org?.name) setOrganizationName(org.name);
-      const [rowsResult,assetsResult,invoicesResult,documentsResult] = await Promise.all([
+      const [rowsResult,assetsResult,invoicesResult,documentsResult,guidesResult] = await Promise.all([
         supabase.from("support_tickets").select("id,ticket_number,title,category,status,priority,created_at,description").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
         supabase.from("assets").select("id,asset_tag,name,category,status,manufacturer,model,serial_number,hostname,operating_system,ip_address,warranty_until").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
         supabase.from("service_invoices").select("id,invoice_number,status,issue_date,due_date,total,currency").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
         supabase.from("documents").select("id,name,storage_path,mime_type,size_bytes,category,created_at").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
+        supabase.from("ai_knowledge_sources").select("id,title,content,tags,updated_at").eq("status","published").order("updated_at",{ascending:false}),
       ]);
-      const rows=rowsResult.data;setAssets((assetsResult.data??[]) as PortalAsset[]);setInvoices((invoicesResult.data??[]) as PortalInvoice[]);setDocuments((documentsResult.data??[]) as PortalDocument[]);
+      const rows=rowsResult.data;setAssets((assetsResult.data??[]) as PortalAsset[]);setInvoices((invoicesResult.data??[]) as PortalInvoice[]);setDocuments((documentsResult.data??[]) as PortalDocument[]);setGuides((guidesResult.data??[]) as PortalGuide[]);
       const statusLabels: Record<string, RequestItem["status"]> = { new: "Nouvelle", in_progress: "En cours", waiting_customer: "En attente", waiting_bn2: "En attente", resolved: "Résolue", closed: "Résolue" };
       const priorityLabels: Record<string, RequestItem["priority"]> = { low: "Basse", normal: "Normale", high: "Haute", urgent: "Haute" };
       const mapped = (rows ?? []).map((row: {id:string;ticket_number:string;title:string;category:string;status:string;priority:string;created_at:string;description:string}) => ({
@@ -214,7 +217,7 @@ export default function ClientPortalPage() {
 
           {section === "Mes factures" && <><div className="client-page-heading"><div className="client-eyebrow">GESTION FINANCIÈRE</div><h1>Mes factures</h1><p>Consultez les factures émises par BN2 Consulting pour votre entreprise.</p></div>{invoices.length===0?<div className="client-empty">Aucune facture disponible pour le moment.</div>:<div className="client-invoice-list">{invoices.map(invoice=><article className="client-invoice-card" key={invoice.id}><div><small>{invoice.invoice_number}</small><strong>{new Date(invoice.issue_date).toLocaleDateString("fr-BE")}</strong></div><div><small>Échéance</small><strong>{invoice.due_date?new Date(invoice.due_date).toLocaleDateString("fr-BE"):"—"}</strong></div><div><small>Montant</small><strong>{Number(invoice.total).toLocaleString("fr-BE",{style:"currency",currency:invoice.currency||"EUR"})}</strong></div><span className={"client-status-pill "+(invoice.status==="paid"?"resolved":invoice.status==="overdue"?"new":"waiting")}>{invoice.status==="paid"?"Payée":invoice.status==="overdue"?"En retard":invoice.status==="issued"?"À payer":invoice.status==="draft"?"Brouillon":invoice.status}</span><button onClick={()=>void loadInvoiceItems(invoice.id)}>{selectedInvoice===invoice.id?"Actualiser":"Voir le détail"} <ChevronRight size={14}/></button></article>)}</div>}{selectedInvoice&&<div className="client-invoice-detail"><h2>Détail de la facture</h2><div className="table-wrap"><table><thead><tr><th>Description</th><th>Quantité</th><th>Prix unitaire</th><th>TVA</th><th>Total</th></tr></thead><tbody>{invoiceItems.map(item=><tr key={item.id}><td>{item.description}</td><td>{item.quantity}</td><td>{Number(item.unit_price).toLocaleString("fr-BE",{style:"currency",currency:"EUR"})}</td><td>{item.tax_rate}%</td><td>{Number(item.line_total).toLocaleString("fr-BE",{style:"currency",currency:"EUR"})}</td></tr>)}</tbody></table></div></div>}</>}
           {section === "Documents" && <><div className="client-page-heading"><div className="client-eyebrow">ESPACE DOCUMENTAIRE</div><h1>Documents</h1><p>Documents et fichiers partagés par votre équipe BN2.</p></div>{documents.length===0?<div className="client-empty">Aucun document n'a encore été partagé.</div>:<div className="client-document-list">{documents.map(document=><article key={document.id}><span><FileText size={18}/></span><div><strong>{document.name}</strong><small>{document.category} · {document.mime_type||"Fichier"} · {document.size_bytes?Math.ceil(document.size_bytes/1024)+" Ko":"—"} · {new Date(document.created_at).toLocaleDateString("fr-BE")}</small></div><button onClick={()=>void downloadDocument(document)}>Télécharger <ArrowRight size={14}/></button></article>)}</div>}</>}
-          {section === "Guides & aide" && <><div className="client-page-heading"><div className="client-eyebrow">CENTRE D&apos;AIDE</div><h1>Guides & assistance</h1><p>Des ressources simples pour vous aider au quotidien.</p></div><div className="client-placeholder-grid"><article><BookOpen size={20}/><strong>Guides Microsoft 365</strong><p>Outlook, Teams, OneDrive et bonnes pratiques.</p><span>Contenu à préparer</span></article><article><ShieldCheck size={20}/><strong>Sécurité informatique</strong><p>Conseils pour protéger vos comptes et vos appareils.</p><span>Contenu à préparer</span></article><article><LifeBuoy size={20}/><strong>Contacter le support</strong><p>Une question qui ne trouve pas sa réponse ?</p><button onClick={() => setSection("Nouvelle demande")}>Créer une demande <ArrowRight size={14}/></button></article></div></>}
+          {section === "Guides & aide" && <><div className="client-page-heading"><div className="client-eyebrow">CENTRE D&apos;AIDE</div><h1>Guides & assistance</h1><p>Articles et procédures publiés par votre équipe BN2.</p></div>{guides.length===0?<div className="client-empty">Aucun guide n'a encore été publié. Vous pouvez poser votre question à l'assistant IA.</div>:<div className="client-guide-grid">{guides.map(guide=><article key={guide.id}><span><BookOpen size={18}/></span><h3>{guide.title}</h3><p>{guide.content.slice(0,260)}{guide.content.length>260?"…":""}</p><small>{guide.tags.join(" · ")}</small></article>)}</div>}<button className="client-primary" onClick={()=>window.location.assign("/portal/assistant")}><Bot size={15}/> Poser une question à l'assistant IA</button></>}
           <footer className="client-footer"><span>BN2 HUB <b>•</b> Votre centre de services IT</span><span>UNE SOLUTION BN2 CONSULTING</span></footer>
         </div>
       </section>
