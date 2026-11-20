@@ -115,7 +115,7 @@ export default function ClientAssistantPage() {
       </aside>
       <section className="bn2-assistant-main">
         <div className="bn2-assistant-heading">
-          <div><div className="bn2-assistant-eyebrow"><Sparkles size={13}/> ASSISTANCE INTELLIGENTE BN2</div><h1>Comment puis-je vous aider ?</h1><p>Posez librement votre question. L'assistant s'appuie sur les consignes et les ressources validées par BN2.</p></div>
+          <div><div className="bn2-assistant-eyebrow"><Sparkles size={13}/> ASSISTANCE INTELLIGENTE BN2</div><h1>Comment puis-je vous aider ?</h1><p>Posez librement votre question. L&apos;assistant s&apos;appuie sur les consignes et les ressources validées par BN2.</p></div>
           <div className="bn2-assistant-live"><span/> Assistant disponible</div>
         </div>
         <div className="bn2-assistant-messages">
