@@ -11,7 +11,7 @@ export async function GET() {
   if (role !== "bn2_owner" && role !== "bn2_admin") return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
-  const [orgs, openTickets, allTickets, interventions, logs, recentTickets, ticketCounts, newTickets, activityLogs] = await Promise.all([
+  const [orgs, openTickets, allTickets, interventions, logs, recentTickets, ticketCounts, newTickets, activityLogs, notifications] = await Promise.all([
     supabase.from("organizations").select("id,name,slug,status").eq("status", "active").order("name"),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).not("status", "in", '("resolved","closed")'),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }),
@@ -21,9 +21,10 @@ export async function GET() {
     supabase.from("support_tickets").select("organization_id"),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "new"),
     supabase.from("audit_logs").select("id,action,entity_type,entity_id,created_at,details").order("created_at", { ascending: false }).limit(6),
+    supabase.from("notifications").select("id,title,body,href,read_at,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(8),
   ]);
 
-  const firstError = [orgs.error, openTickets.error, allTickets.error, interventions.error, logs.error, recentTickets.error, ticketCounts.error, newTickets.error, activityLogs.error].find(Boolean);
+  const firstError = [orgs.error, openTickets.error, allTickets.error, interventions.error, logs.error, recentTickets.error, ticketCounts.error, newTickets.error, activityLogs.error, notifications.error].find(Boolean);
   if (firstError) return NextResponse.json({ error: "database_error", message: firstError.message }, { status: 500 });
 
   const ticketCountByOrg = new Map<string,number>();
@@ -65,5 +66,7 @@ export async function GET() {
     clients,
     tickets,
     activity,
+    notifications: notifications.data ?? [],
+    unreadNotifications: (notifications.data ?? []).filter(item=>!item.read_at).length,
   }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
