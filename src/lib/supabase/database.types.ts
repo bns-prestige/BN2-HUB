@@ -335,6 +335,24 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_bootstrap_requests: {
+        Row: {
+          bootstrap_token: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          bootstrap_token: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          bootstrap_token?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -598,10 +616,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_initial_bn2_owner: {
-        Args: { bootstrap_token: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
