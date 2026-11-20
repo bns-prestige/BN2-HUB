@@ -12,6 +12,7 @@ import {
 
 type RequestItem = {
   id: string;
+  recordId: string;
   title: string;
   category: string;
   status: "Nouvelle" | "En cours" | "En attente" | "Résolue";
@@ -29,6 +30,12 @@ const categories = [
   { label: "Autre demande", icon: HelpCircle, description: "Question ou demande générale" },
 ];
 
+type PortalAsset={id:string;asset_tag:string|null;name:string;category:string;status:string;manufacturer:string|null;model:string|null;serial_number:string|null;hostname:string|null;operating_system:string|null;ip_address:string|null;warranty_until:string|null};
+type PortalInvoice={id:string;invoice_number:string;status:string;issue_date:string;due_date:string|null;total:number;currency:string};
+type PortalDocument={id:string;name:string;storage_path:string;mime_type:string|null;size_bytes:number|null;category:string;created_at:string};
+type PortalMessage={id:string;body:string;created_at:string;sender_id:string};
+type PortalInvoiceItem={id:string;description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number};
+
 const statusClass: Record<RequestItem["status"], string> = {
   Nouvelle: "new", "En cours": "progress", "En attente": "waiting", Résolue: "resolved",
 };
@@ -36,6 +43,15 @@ const statusClass: Record<RequestItem["status"], string> = {
 export default function ClientPortalPage() {
   const [section, setSection] = useState("Accueil");
   const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [userId,setUserId]=useState("");
+  const [assets,setAssets]=useState<PortalAsset[]>([]);
+  const [invoices,setInvoices]=useState<PortalInvoice[]>([]);
+  const [documents,setDocuments]=useState<PortalDocument[]>([]);
+  const [messages,setMessages]=useState<PortalMessage[]>([]);
+  const [newMessage,setNewMessage]=useState("");
+  const [sendingMessage,setSendingMessage]=useState(false);
+  const [selectedInvoice,setSelectedInvoice]=useState("");
+  const [invoiceItems,setInvoiceItems]=useState<PortalInvoiceItem[]>([]);
   const [selected, setSelected] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [organizationName, setOrganizationName] = useState("Votre entreprise");
@@ -61,6 +77,7 @@ export default function ClientPortalPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+      setUserId(user.id);
       setProfileName(user.user_metadata?.full_name || user.email?.split("@")[0] || "Utilisateur");
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
       if (profile?.full_name) setProfileName(profile.full_name);
@@ -71,11 +88,17 @@ export default function ClientPortalPage() {
       setProfileRole(membership.role === "admin" || membership.role === "owner" ? "Administrateur" : "Collaborateur");
       const org = Array.isArray(membership.organizations) ? membership.organizations[0] : membership.organizations;
       if (org?.name) setOrganizationName(org.name);
-      const { data: rows } = await supabase.from("support_tickets").select("ticket_number,title,category,status,priority,created_at,description").eq("organization_id", membership.organization_id).order("created_at", { ascending: false });
+      const [rowsResult,assetsResult,invoicesResult,documentsResult] = await Promise.all([
+        supabase.from("support_tickets").select("id,ticket_number,title,category,status,priority,created_at,description").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
+        supabase.from("assets").select("id,asset_tag,name,category,status,manufacturer,model,serial_number,hostname,operating_system,ip_address,warranty_until").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
+        supabase.from("service_invoices").select("id,invoice_number,status,issue_date,due_date,total,currency").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
+        supabase.from("documents").select("id,name,storage_path,mime_type,size_bytes,category,created_at").eq("organization_id",membership.organization_id).order("created_at",{ascending:false}),
+      ]);
+      const rows=rowsResult.data;setAssets((assetsResult.data??[]) as PortalAsset[]);setInvoices((invoicesResult.data??[]) as PortalInvoice[]);setDocuments((documentsResult.data??[]) as PortalDocument[]);
       const statusLabels: Record<string, RequestItem["status"]> = { new: "Nouvelle", in_progress: "En cours", waiting_customer: "En attente", waiting_bn2: "En attente", resolved: "Résolue", closed: "Résolue" };
       const priorityLabels: Record<string, RequestItem["priority"]> = { low: "Basse", normal: "Normale", high: "Haute", urgent: "Haute" };
-      const mapped = (rows ?? []).map((row: {ticket_number:string;title:string;category:string;status:string;priority:string;created_at:string;description:string}) => ({
-        id: row.ticket_number, title: row.title, category: row.category,
+      const mapped = (rows ?? []).map((row: {id:string;ticket_number:string;title:string;category:string;status:string;priority:string;created_at:string;description:string}) => ({
+        id: row.ticket_number, recordId:row.id, title: row.title, category: row.category,
         status: statusLabels[row.status] ?? "Nouvelle",
         priority: priorityLabels[row.priority] ?? "Normale",
         date: new Date(row.created_at).toLocaleString("fr-BE", { dateStyle: "short", timeStyle: "short" }),
@@ -104,7 +127,7 @@ export default function ClientPortalPage() {
       if (!response.ok) throw new Error(result.error ?? "Impossible d'envoyer la demande.");
       const data = result.ticket;
       const next: RequestItem = {
-        id: data.ticket_number, title: data.title, category: data.category, status: "Nouvelle",
+        id: data.ticket_number, recordId:data.id, title: data.title, category: data.category, status: "Nouvelle",
         priority, date: new Date(data.created_at).toLocaleString("fr-BE", { dateStyle: "short", timeStyle: "short" }),
         detail: data.description,
       };
