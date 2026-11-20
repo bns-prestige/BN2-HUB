@@ -4,7 +4,7 @@ import { useCallback,useEffect,useMemo,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RefreshCw,Search } from "lucide-react";
 
-type AuditRecord={id:string;actor_id:string|null;organization_id:string|null;action:string;entity_type:string;entity_id:string|null;details:unknown;created_at:string;organizations:{name?:string}|{name?:string}[]|null};
+type AuditRecord={id:number;actor_id:string|null;organization_id:string|null;action:string;entity_type:string;entity_id:string|null;details:unknown;created_at:string;organizations:{name?:string}|{name?:string}[]|null};
 type Profile={id:string;full_name:string|null;email:string|null};
 function orgName(value:AuditRecord["organizations"]){return Array.isArray(value)?value[0]?.name??"—":value?.name??"—";}
 const labels:Record<string,string>={ticket_created:"Demande créée",ticket_status_changed:"Statut de demande modifié",ticket_message_sent:"Message envoyé",organization_created:"Entreprise créée",staff_invited:"Employé invité",staff_updated:"Accès employé modifié",intervention_created:"Intervention planifiée",intervention_status_changed:"Intervention mise à jour",invoice_created:"Facture créée",invoice_status_changed:"Facture mise à jour",initial_owner_activated:"Propriétaire activé",client_invitation_email_sent:"Invitation client envoyée"};
