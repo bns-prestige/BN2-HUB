@@ -38,7 +38,7 @@ export default function PlatformSettings(){
  function value(group:string,key:string,fallback:unknown=""):unknown{
   return settings[group]?.[key]??fallback;
  }
- function setValue(group:string,key:string,next:unknown){
+ function setValue(group:string,key:string,next:Json){
   setSettings(current=>({...current,[group]:{...(current[group]??{}),[key]:next}}));
  }
  function setSla(key:string,next:number){
