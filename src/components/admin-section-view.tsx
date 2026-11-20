@@ -7,7 +7,7 @@ import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
 import AuditLogViewer from "@/components/audit-log-viewer";
 import {
-  ChevronRight, Copy, Database, FileText, Globe, Plus, Save, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
+  ChevronRight, Copy, Database, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
