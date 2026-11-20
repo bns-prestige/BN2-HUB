@@ -35,3 +35,23 @@ export async function notifyTicketCreated(organizationId:string,ticket:TicketNot
  }
  return {sent,reason:failures[0]};
 }
+
+
+export async function notifyTicketStatusChanged(organizationId:string,ticket:{ticket_number:string;title:string;status:string},actorId:string){
+ const admin=createAdminClient();
+ const {data:members}=await admin.from("organization_members").select("user_id").eq("organization_id",organizationId).eq("status","active");
+ const ids=[...new Set((members??[]).map(item=>item.user_id).filter(id=>id!==actorId))];
+ if(!ids.length)return {sent:0};
+ const {data:profiles}=await admin.from("profiles").select("email").in("id",ids);
+ const emails=[...new Set((profiles??[]).map(profile=>profile.email?.trim().toLowerCase()).filter((email):email is string=>Boolean(email)))];
+ let sent=0;
+ for(const email of emails){
+  const result=await sendBn2Email({
+   to:[email],subject:"Mise à jour de la demande "+ticket.ticket_number,
+   html:"<div style='font-family:Arial,sans-serif;color:#17253b;max-width:560px;margin:auto;padding:28px'><strong style='color:#1768d2'>BN2 CONSULTING</strong><h1 style='font-size:20px'>Votre demande a été mise à jour</h1><p><strong>"+escapeHtml(ticket.ticket_number)+" · "+escapeHtml(ticket.title)+"</strong></p><p>Nouveau statut : <strong>"+escapeHtml(ticket.status)+"</strong></p><p>Connectez-vous à votre portail BN2 HUB pour consulter le suivi.</p></div>",
+   text:"La demande "+ticket.ticket_number+" ("+ticket.title+") est maintenant au statut "+ticket.status+".",
+  });
+  if(result.sent)sent++;
+ }
+ return {sent};
+}
