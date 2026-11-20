@@ -201,45 +201,60 @@ function SupportQueue() {
 }
 
 function ClientPortalControl() {
-  const [client, setClient] = useState("Atelier Nova");
-  const [active, setActive] = useState(true);
-  const [modules, setModules] = useState(["Support", "Parc informatique", "Documents", "Microsoft 365"]);
-  const [saved, setSaved] = useState(false);
-  const clients = [
-    { name: "Atelier Nova", domain: "atelier-nova.bn2hub.be", users: "8 utilisateurs", plan: "Support essentiel" },
-    { name: "Groupe Horizon", domain: "groupe-horizon.bn2hub.be", users: "14 utilisateurs", plan: "Gestion informatique" },
-    { name: "Cabinet Dewael", domain: "cabinet-dewael.bn2hub.be", users: "6 utilisateurs", plan: "Support essentiel" },
-  ];
-  const current = clients.find((item) => item.name === client) ?? clients[0];
-  const options = [
-    { name: "Support", description: "Tickets et échanges avec BN2", icon: LifeBuoy },
-    { name: "Parc informatique", description: "Matériel, appareils et licences", icon: Monitor },
-    { name: "Documents", description: "Contrats et fichiers partagés", icon: FileText },
-    { name: "Microsoft 365", description: "Comptes et services cloud", icon: Cloud },
-    { name: "Utilisateurs", description: "Comptes et permissions client", icon: Users },
-  ];
-  function toggleModule(name: string) {
-    setSaved(false);
-    setModules((items) => items.includes(name) ? items.filter((item) => item !== name) : [...items, name]);
-  }
-  return <div className="admin-content admin-section-content">
-    <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Centre de contrôle client</h1><p>Configurez les accès et les fonctionnalités de chaque portail depuis BN2 HUB.</p></div><span className="section-demo-label">MODE APERÇU · NON PUBLIÉ</span></div>
-    <div className="portal-control-layout">
-      <section className="admin-panel portal-client-list"><div className="panel-heading"><div><h3>Organisations</h3><p>Sélectionnez un espace client.</p></div><span className="section-record-count">3 clients</span></div>
-        {clients.map((item) => <button key={item.name} className={`portal-client-choice ${client === item.name ? "selected" : ""}`} onClick={() => {setClient(item.name);setSaved(false);}}>
-          <span className="portal-client-avatar">{item.name.split(" ").map((word) => word[0]).join("").slice(0,2)}</span><span className="portal-client-copy"><strong>{item.name}</strong><small>{item.plan}</small></span><ChevronRight size={16}/>
-        </button>)}
-      </section>
-      <section className="admin-panel portal-config-panel">
-        <div className="portal-config-heading"><div><div className="page-eyebrow">CONFIGURATION DE L&apos;ESPACE</div><h2>{current.name}</h2><p>{current.users} · {current.plan}</p></div><button className={`portal-status-toggle ${active ? "is-active" : ""}`} onClick={() => {setActive(!active);setSaved(false);}}><Power size={15}/>{active ? "Portail actif" : "Portail suspendu"}</button></div>
-        <div className="portal-domain-row"><Globe size={17}/><div><small>ADRESSE DU PORTAIL</small><strong>{current.domain}</strong></div><span>SOUS-DOMAINE BN2</span></div>
-        <div className="portal-module-heading"><div><h3>Modules et autorisations</h3><p>Activez uniquement les outils inclus pour cette organisation.</p></div><span>{modules.length} / {options.length}</span></div>
-        <div className="portal-module-list">{options.map((item) => {const Icon=item.icon;const enabled=modules.includes(item.name);return <button key={item.name} className={`portal-module-row ${enabled ? "enabled" : ""}`} onClick={() => toggleModule(item.name)}><span className="portal-module-icon"><Icon size={17}/></span><span className="portal-module-copy"><strong>{item.name}</strong><small>{item.description}</small></span><span className={`portal-check ${enabled ? "checked" : ""}`}>{enabled && <Check size={13}/>}</span></button>;})}</div>
-        <div className="portal-control-footer"><div><strong>Les changements restent locaux dans cet aperçu.</strong><small>La sauvegarde, les rôles et l&apos;application réelle seront reliés à Supabase après validation de la sécurité multi-tenant.</small></div><button className="admin-primary-button" onClick={() => setSaved(true)}><Check size={15}/> {saved ? "Aperçu enregistré" : "Enregistrer l'aperçu"}</button></div>
-      </section>
-    </div>
-    <div className="section-info-grid"><div className="admin-panel section-info-card"><div className="section-info-icon"><ShieldCheck size={17}/></div><div><strong>Isolation par organisation</strong><p>Chaque client aura ses propres données, membres et permissions, protégés par les règles RLS.</p></div></div><div className="admin-panel section-info-card"><div className="section-info-icon"><Database size={17}/></div><div><strong>Infrastructure mutualisée</strong><p>Une seule plateforme BN2 HUB, avec des espaces isolés et des sous-domaines dédiés par client.</p></div></div></div>
-  </div>;
+ const [clients,setClients]=useState<any[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [name,setName]=useState("");
+ const [email,setEmail]=useState("");
+ const [sector,setSector]=useState("Services professionnels");
+ const [description,setDescription]=useState("");
+ const [error,setError]=useState("");
+ const [saving,setSaving]=useState(false);
+
+ async function load(){
+  setLoading(true);
+  const {data,error}=await createClient().from("organizations").select("id,name,slug,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
+  if(error)setError(error.message);else setClients(data??[]);
+  setLoading(false);
+ }
+ useEffect(()=>{void load();},[]);
+
+ async function createOrganization(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();setError("");setSaving(true);
+  const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  const {error}=await createClient().from("organizations").insert({name:name.trim(),slug,sector,description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding"}).select("id").single();
+  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");await load();}
+  setSaving(false);
+ }
+ async function updateStatus(id:string,status:string){
+  const {error}=await createClient().from("organizations").update({status}).eq("id",id);
+  if(error)setError(error.message);else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
+ }
+ return <div className="admin-content admin-section-content">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Portails clients</h1><p>Créez et gérez les organisations qui utilisent les services BN2.</p></div><span className="section-demo-label">SUPABASE EN DIRECT</span></div>
+  <div className="portal-control-layout">
+   <section className="admin-panel portal-config-panel">
+    <div className="portal-config-heading"><div><div className="page-eyebrow">NOUVELLE ORGANISATION</div><h2>Créer un espace client</h2><p>L'organisation sera enregistrée dans la base BN2.</p></div></div>
+    <form className="builder-fields" onSubmit={createOrganization}>
+     <label>Nom de l'entreprise<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder="Ex. : Atelier Nova"/></label>
+     <label>E-mail de contact<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="contact@entreprise.be"/></label>
+     <label>Secteur d'activité<select value={sector} onChange={e=>setSector(e.target.value)}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select></label>
+     <label className="builder-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Contexte et besoins de l'entreprise"/></label>
+     {error&&<p role="alert" className="client-notice">{error}</p>}
+     <button className="admin-primary-button" type="submit" disabled={saving||!name.trim()}><Plus size={16}/>{saving?"Création...":"Créer l'organisation"}</button>
+    </form>
+   </section>
+   <section className="admin-panel portal-client-list">
+    <div className="panel-heading"><div><h3>Organisations enregistrées</h3><p>{clients.length} organisation(s) dans Supabase.</p></div><span className="section-record-count">{clients.length}</span></div>
+    {loading&&<p>Chargement...</p>}
+    {!loading&&clients.length===0&&<p>Aucune organisation enregistrée pour le moment.</p>}
+    {clients.map(item=><article className="portal-client-choice" key={item.id}>
+      <span className="portal-client-avatar">{item.name.split(/\s+/).map((part:string)=>part[0]).join("").slice(0,2).toUpperCase()}</span>
+      <span className="portal-client-copy"><strong>{item.name}</strong><small>{item.contact_email||item.slug}</small></span>
+      <select aria-label={"Statut de "+item.name} value={item.status} onChange={e=>void updateStatus(item.id,e.target.value)}><option value="onboarding">À configurer</option><option value="active">Actif</option><option value="suspended">Suspendu</option><option value="archived">Archivé</option></select>
+    </article>)}
+   </section>
+  </div>
+ </div>;
 }
 
 export default function AdminSectionView({ active }: { active: string }) {
