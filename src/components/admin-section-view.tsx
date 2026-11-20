@@ -71,14 +71,16 @@ function SupportQueue() {
  async function updateStatus(status:QueueStatus){
   if(!current)return;setSaving(true);
   const value:Record<QueueStatus,string>={"Nouvelle":"new","À vérifier":"waiting_bn2","En cours":"in_progress","En attente du client":"waiting_customer","Résolue":"resolved","Fermée":"closed"};
-  const {error}=await createClient().from("support_tickets").update({status:value[status],resolved_at:status==="Résolue"||status==="Fermée"?new Date().toISOString():null}).eq("id",current.recordId);
-  if(!error)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,status}:item));
+  const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:value[status]})});
+  const result=await response.json();
+  if(response.ok)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,status}:item));
+  else setMessage(result.error??"Mise à jour impossible.");
   setSaving(false);
  }
  async function assignToMe(){
   if(!current)return;setSaving(true);
   const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
-  if(user){const {error}=await supabase.from("support_tickets").update({assigned_to:user.id,status:"in_progress"}).eq("id",current.recordId);if(!error)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,assignee:user.id,status:"En cours"}:item));}
+  if(user){const response=await fetch("/api/tickets/"+current.recordId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({assignedTo:user.id,status:"in_progress"})});if(response.ok)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,assignee:user.id,status:"En cours"}:item));else setMessage("Impossible de vous attribuer cette demande.");}
   setSaving(false);
  }
  async function addNote(){
