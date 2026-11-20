@@ -167,7 +167,8 @@ function ClientPortalControl() {
 }
 
 export default function AdminSectionView({ active }: { active: string }) {
-  if (active === "Portails clients") return <ClientPortalControl />;\n  const data = sections[active];
+  if (active === "Portails clients") return <ClientPortalControl />;
+  const data = sections[active];
   if (!data) {
     return <div className="admin-content admin-section-content">
       <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Configurez les règles de fonctionnement de votre espace administrateur.</p></div></div>
