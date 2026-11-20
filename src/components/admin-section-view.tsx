@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Check, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, Monitor, Plus, Power, ShieldCheck, Sparkles, Users,
+  Check, CheckCircle2, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, MessageSquare, Monitor, Plus, Power, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
 
 type Row = { cells: string[]; status?: string; priority?: string };
