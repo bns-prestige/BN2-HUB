@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import {
-  ChevronRight, Copy, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
+  ChevronRight, Copy, Database, FileText, Globe, Plus, Save, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
@@ -228,7 +228,7 @@ function LiveModuleSection({active}:{active:string}) {
   "Interventions":{
    table:"interventions",select:"id,organization_id,title,description,assigned_to,scheduled_start,scheduled_end,status,location,organizations(name)",
    title:"Interventions",columns:["Intervention","Client","Date prévue","Technicien","Lieu","Statut"],
-   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",staffOptions.find(x=>x.id===r.assigned_to)?.name??"Non attribué",r.location??"—",r.status??"—"],
+   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.assigned_to??"Non attribué",r.location??"—",r.status??"—"],
    fields:[
     {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
     {name:"title",label:"Objet de l'intervention",type:"text",required:true},
@@ -279,7 +279,7 @@ function LiveModuleSection({active}:{active:string}) {
   "Parc informatique":{
    table:"assets",select:"id,organization_id,asset_tag,name,category,status,manufacturer,model,serial_number,assigned_to,purchased_on,warranty_until,hostname,operating_system,ip_address,mac_address,purchase_cost,license_expires_on,notes,organizations(name)",
    title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","Attribué à","État"],
-   map:r=>[r.asset_tag??"—",r.name??"—",moduleOrganizationName(r),r.category??"—",staffOptions.find(x=>x.id===r.assigned_to)?.name??"—",r.status??"—"],
+   map:r=>[r.asset_tag??"—",r.name??"—",moduleOrganizationName(r),r.category??"—",r.assigned_to??"—",r.status??"—"],
    fields:[
     {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
     {name:"asset_tag",label:"Référence interne",type:"text"},
@@ -311,7 +311,7 @@ function LiveModuleSection({active}:{active:string}) {
    ],
   },
   "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name??"—",r.contact_email??"—",r.sector??"—",r.status??"—"]},
- }),[staffOptions]);
+ }),[]);
  const current=config[active];
 
  const loadRows=useCallback(async()=>{
@@ -350,7 +350,7 @@ function LiveModuleSection({active}:{active:string}) {
  function openEdit(row:ModuleRecord){
   const values:Record<string,string|boolean>={};
   current?.fields?.forEach(field=>{
-   const value=(row as Record<string,unknown>)[field.name];
+   const value=(row as unknown as Record<string,unknown>)[field.name];
    values[field.name]=value==null?(field.type==="checkbox"?false:""):field.type==="datetime-local"&&typeof value==="string"?value.slice(0,16):typeof value==="boolean"?value:String(value);
   });
   setFormValues(values);setEditingId(row.id??"");setDocumentFile(null);setError("");setNotice("");setFormOpen(true);
@@ -390,8 +390,8 @@ function LiveModuleSection({active}:{active:string}) {
    payload.updated_at=new Date().toISOString();
    if(current.table==="interventions"&&!editingId)payload.created_by=user.id;
    const result=editingId
-    ? await supabase.from(current.table).update(payload).eq("id",editingId)
-    : await supabase.from(current.table).insert(payload);
+    ? await supabase.from(current.table).update(payload as never).eq("id",editingId)
+    : await supabase.from(current.table).insert(payload as never);
    if(result.error){setError(result.error.message);setSaving(false);return;}
   }
   setNotice(editingId?"Enregistrement mis à jour.":"Enregistrement créé.");
