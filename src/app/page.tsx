@@ -177,7 +177,7 @@ export default function AdminHome() {
 
         {active === "Vue d'ensemble" ? <div className="admin-content">
           <div className="page-heading">
-            <div><div className="page-eyebrow">BN2 CONSULTING <span>·</span> ESPACE ADMINISTRATEUR</div><h1>Bonjour {firstName}.</h1><p>Voici ce qui nécessite votre attention aujourd'hui.</p></div>
+            <div><div className="page-eyebrow">BN2 CONSULTING <span>·</span> ESPACE ADMINISTRATEUR</div><h1>Bonjour {firstName}.</h1><p>Voici ce qui nécessite votre attention aujourd&apos;hui.</p></div>
             <button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={16}/> Nouvelle demande</button>
           </div>
           {dashboardError && <div className="bn2-dashboard-alert" role="alert">{dashboardError}<button onClick={()=>void loadDashboard()}>Réessayer</button></div>}
