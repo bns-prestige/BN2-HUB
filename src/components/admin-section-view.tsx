@@ -2,120 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import Link from "next/link";
 import {
-  Check, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, MessageSquare, Monitor, Plus, Power, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
+  ChevronRight, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
 
-type Row = { cells: string[]; status?: string; priority?: string };
-type Section = { intro: string; metrics: { label: string; value: string; hint: string }[]; columns: string[]; rows: Row[] };
-
-const sections: Record<string, Section> = {
-  "Portails clients": {
-    intro: "Pilotez les espaces privés de vos clients : accès, modules, personnalisation et disponibilité.",
-    metrics: [{label:"Portails actifs",value:"12",hint:"Espaces clients hébergés par BN2"},{label:"À configurer",value:"02",hint:"En attente de publication"},{label:"Utilisateurs",value:"38",hint:"Comptes clients actifs"}],
-    columns:["Organisation","Adresse du portail","Modules","Utilisateurs","État"],
-    rows:[
-      {cells:["Atelier Nova","atelier-nova.bn2hub.be","6 modules","08","Actif"],status:"Actif"},
-      {cells:["Groupe Horizon","groupe-horizon.bn2hub.be","5 modules","14","Actif"],status:"Actif"},
-      {cells:["Cabinet Dewael","cabinet-dewael.bn2hub.be","4 modules","06","Actif"],status:"Actif"},
-      {cells:["Studio Meridian","À attribuer","À configurer","—","Brouillon"],status:"Brouillon"},
-    ],
-  },
-  Hébergement: {
-    intro: "Une infrastructure centralisée, opérée et financée par BN2 Consulting pour tous les portails clients.",
-    metrics: [{label:"Environnements",value:"12",hint:"Portails sur la plateforme BN2"},{label:"Disponibilité cible",value:"99,9 %",hint:"Objectif de service, non mesuré ici"},{label:"Facturation",value:"BN2",hint:"Abonnements centralisés"}],
-    columns:["Service","Rôle","Gestionnaire","Facturation","État"],
-    rows:[
-      {cells:["Application BN2 HUB","Portails et administration","BN2 Consulting","Centralisée BN2","À déployer"],status:"À déployer"},
-      {cells:["Base de données Supabase","Données isolées par organisation","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
-      {cells:["Stockage documents","Fichiers et pièces jointes","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
-      {cells:["DNS & domaines","Sous-domaines clients","BN2 Consulting","Centralisée BN2","À configurer"],status:"À configurer"},
-    ],
-  },
-  "Demandes support": {
-    intro: "Centralisez les demandes reçues et suivez leur traitement par l'équipe BN2.",
-    metrics: [{label:"À traiter",value:"08",hint:"Demandes nouvelles"},{label:"En cours",value:"12",hint:"Prises en charge"},{label:"En attente",value:"04",hint:"Retour client requis"}],
-    columns:["Référence","Demande","Client","Priorité","Statut"],
-    rows:[
-      {cells:["BN2-2026-0042","Accès à la boîte mail partagée","Atelier Nova","Haute","Nouvelle"],priority:"Haute",status:"Nouvelle"},
-      {cells:["BN2-2026-0041","Configuration du nouvel ordinateur","Groupe Horizon","Normale","En cours"],priority:"Normale",status:"En cours"},
-      {cells:["BN2-2026-0040","Ajout d&apos;un utilisateur","Cabinet Dewael","Normale","À vérifier"],priority:"Normale",status:"À vérifier"},
-      {cells:["BN2-2026-0039","Problème de connexion VPN","Atelier Nova","Basse","Résolue"],priority:"Basse",status:"Résolue"},
-    ],
-  },
-  Clients: {
-    intro: "Gérez les entreprises clientes, leurs espaces privés et leurs informations de suivi.",
-    metrics: [{label:"Clients actifs",value:"12",hint:"Portails en service"},{label:"En configuration",value:"02",hint:"Espaces à préparer"},{label:"Contrats à renouveler",value:"03",hint:"Dans les 60 jours"}],
-    columns:["Entreprise","Contact principal","Formule","Demandes ouvertes","État"],
-    rows:[
-      {cells:["Atelier Nova","Julie Dupont","Support essentiel","03","Actif"],status:"Actif"},
-      {cells:["Groupe Horizon","Marc Leroy","Gestion informatique","02","Actif"],status:"Actif"},
-      {cells:["Cabinet Dewael","Sophie Dewael","Support essentiel","01","Actif"],status:"Actif"},
-      {cells:["Studio Meridian","Thomas Bernard","À définir","—","À configurer"],status:"À configurer"},
-    ],
-  },
-  Interventions: {
-    intro: "Planifiez les interventions, assignez un technicien et conservez un historique clair.",
-    metrics: [{label:"Cette semaine",value:"07",hint:"Interventions planifiées"},{label:"À confirmer",value:"02",hint:"En attente du client"},{label:"Terminées",value:"18",hint:"Ce mois-ci"}],
-    columns:["Intervention","Client","Technicien","Date prévue","Statut"],
-    rows:[
-      {cells:["Migration Microsoft 365","Atelier Nova","Nadir","21 nov. · 10:00","Planifiée"],status:"Planifiée"},
-      {cells:["Remplacement ordinateur","Groupe Horizon","Yanis","21 nov. · 14:00","Confirmée"],status:"Confirmée"},
-      {cells:["Audit réseau","Cabinet Dewael","Nadir","24 nov. · 09:30","À confirmer"],status:"À confirmer"},
-    ],
-  },
-  "Contrats & heures": {
-    intro: "Suivez les formules de service, les heures incluses et les renouvellements.",
-    metrics: [{label:"Contrats actifs",value:"12",hint:"Clients sous contrat"},{label:"Heures consommées",value:"36 h",hint:"Sur 48 h incluses"},{label:"Renouvellements",value:"03",hint:"À surveiller"}],
-    columns:["Client","Formule","Heures incluses","Consommées","Renouvellement"],
-    rows:[
-      {cells:["Atelier Nova","Support essentiel","8 h / mois","5,5 h","01 déc. 2026"]},
-      {cells:["Groupe Horizon","Gestion informatique","16 h / mois","12 h","15 janv. 2027"]},
-      {cells:["Cabinet Dewael","Support essentiel","8 h / mois","3 h","01 fév. 2027"]},
-    ],
-  },
-  "Parc informatique": {
-    intro: "Inventoriez les équipements, licences et ressources suivis pour chaque client.",
-    metrics: [{label:"Équipements",value:"86",hint:"Dans le parc"},{label:"Sous surveillance",value:"04",hint:"À vérifier"},{label:"Licences",value:"124",hint:"Référencées"}],
-    columns:["Équipement","Client","Type","Dernier contrôle","État"],
-    rows:[
-      {cells:["AN-LT-014 · Dell Latitude","Atelier Nova","Ordinateur","18 nov. 2026","Opérationnel"],status:"Opérationnel"},
-      {cells:["GH-SRV-002 · Serveur","Groupe Horizon","Serveur","17 nov. 2026","À surveiller"],status:"À surveiller"},
-      {cells:["CD-NET-001 · Firewall","Cabinet Dewael","Réseau","15 nov. 2026","Opérationnel"],status:"Opérationnel"},
-    ],
-  },
-  Calendrier: {
-    intro: "Visualisez les rendez-vous, interventions et échéances de l'activité BN2.",
-    metrics: [{label:"Aujourd'hui",value:"02",hint:"Événements prévus"},{label:"Cette semaine",value:"07",hint:"Rendez-vous"},{label:"À planifier",value:"03",hint:"Demandes en attente"}],
-    columns:["Horaire","Événement","Client","Responsable","Type"],
-    rows:[
-      {cells:["10:00 – 11:00","Migration Microsoft 365","Atelier Nova","Nadir","Intervention"]},
-      {cells:["14:00 – 15:00","Remplacement ordinateur","Groupe Horizon","Yanis","Intervention"]},
-      {cells:["16:30 – 17:00","Point de suivi mensuel","Cabinet Dewael","Nadir","Rendez-vous"]},
-    ],
-  },
-  "Équipe BN2": {
-    intro: "Gérez les membres de l'équipe, leurs responsabilités et leur charge de travail.",
-    metrics: [{label:"Membres",value:"04",hint:"Comptes internes"},{label:"Disponibles",value:"03",hint:"Aujourd'hui"},{label:"Interventions assignées",value:"09",hint:"En cours ou prévues"}],
-    columns:["Collaborateur","Rôle","Interventions","Dernière activité","Accès"],
-    rows:[
-      {cells:["Nadir Saâdi","Administrateur","05","Aujourd'hui · 11:42","Propriétaire"],status:"Actif"},
-      {cells:["Yanis Martin","Technicien support","03","Aujourd'hui · 10:18","Actif"],status:"Actif"},
-      {cells:["Sarah Benali","Support client","01","Hier · 16:05","Actif"],status:"Actif"},
-    ],
-  },
-  Documents: {
-    intro: "Retrouvez les contrats, rapports d&apos;intervention et documents partagés.",
-    metrics: [{label:"Documents",value:"48",hint:"Bibliothèque BN2"},{label:"À valider",value:"03",hint:"En attente de revue"},{label:"Partagés",value:"16",hint:"Avec les clients"}],
-    columns:["Document","Client","Catégorie","Dernière mise à jour","État"],
-    rows:[
-      {cells:["Contrat de support 2026","Atelier Nova","Contrat","18 nov. 2026","Validé"],status:"Validé"},
-      {cells:["Rapport audit réseau","Cabinet Dewael","Rapport","17 nov. 2026","À valider"],status:"À valider"},
-      {cells:["Inventaire matériel","Groupe Horizon","Inventaire","14 nov. 2026","Validé"],status:"Validé"},
-    ],
-  },
-};
+type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
+type QueueTicket = { recordId:string; organizationId:string; id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
+type TicketDbRecord = { id:string; ticket_number:string; organization_id:string; title:string; description:string; category:string; priority:string; status:string; created_at:string; assigned_to:string|null; organizations:{name?:string}|{name?:string}[]|null };
+type OrganizationRecord = { id:string; name:string; slug:string; sector:string|null; description:string|null; contact_email:string|null; status:string; created_at:string; enabled_modules:unknown };
+type ModuleRecord = { id?:string; title?:string; status?:string; scheduled_start?:string|null; location?:string|null; organizations:{name?:string}|{name?:string}[]|null; name?:string; plan_name?:string|null; included_hours?:number|null; asset_tag?:string|null; category?:string; mime_type?:string|null; created_at?:string; full_name?:string; email?:string|null; is_active?:boolean; contact_email?:string|null; sector?:string|null };
+const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 
 const settings = [
   {icon:ShieldCheck,title:"Sécurité & accès",text:"Rôles, autorisations et politiques d&apos;accès",tag:"Prioritaire"},
@@ -125,9 +21,6 @@ const settings = [
   {icon:ShieldCheck,title:"Hébergement & infrastructure",text:"Domaines, stockage, sauvegardes et disponibilité",tag:"Infrastructure"},
 ];
 
-type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
-type QueueTicket = { recordId:string; organizationId:string; id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
-const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 function SupportQueue() {
  const [tickets,setTickets]=useState<QueueTicket[]>([]);
  const [filter,setFilter]=useState("Toutes");
@@ -147,7 +40,7 @@ function SupportQueue() {
    if(!error){
     const statusMap:Record<string,QueueStatus>={new:"Nouvelle",in_progress:"En cours",waiting_customer:"En attente du client",waiting_bn2:"À vérifier",resolved:"Résolue",closed:"Fermée"};
     const priorityMap:Record<string,QueueTicket["priority"]>={low:"Basse",normal:"Normale",high:"Haute",urgent:"Haute"};
-    const rows=(data??[]).map((row:any)=>({recordId:row.id,organizationId:row.organization_id,id:row.ticket_number,title:row.title,client:Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client",category:row.category,priority:priorityMap[row.priority]??"Normale",status:statusMap[row.status]??"Nouvelle",assignee:row.assigned_to??"",date:new Date(row.created_at).toLocaleString("fr-BE",{dateStyle:"short",timeStyle:"short"}),description:row.description}));
+    const rows=((data??[]) as TicketDbRecord[]).map((row)=>({recordId:row.id,organizationId:row.organization_id,id:row.ticket_number,title:row.title,client:Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client",category:row.category,priority:priorityMap[row.priority]??"Normale",status:statusMap[row.status]??"Nouvelle",assignee:row.assigned_to??"",date:new Date(row.created_at).toLocaleString("fr-BE",{dateStyle:"short",timeStyle:"short"}),description:row.description}));
     setTickets(rows); if(rows[0]) setSelected(rows[0].recordId);
    }
    setLoading(false);
@@ -157,8 +50,8 @@ function SupportQueue() {
 
  useEffect(()=>{
   if(!current)return;
-  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",current.recordId).order("created_at",{ascending:true}).then(({data})=>setMessages((data??[]).map((item:any)=>item.body)));
- },[selected,current?.recordId]);
+  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",current.recordId).order("created_at",{ascending:true}).then(({data})=>setMessages(((data??[]) as {body:string}[]).map((item)=>item.body)));
+ },[current?.recordId]);
 
  async function updateStatus(status:QueueStatus){
   if(!current)return;setSaving(true);
@@ -201,7 +94,7 @@ function SupportQueue() {
 }
 
 function ClientPortalControl() {
- const [clients,setClients]=useState<any[]>([]);
+ const [clients,setClients]=useState<OrganizationRecord[]>([]);
  const [loading,setLoading]=useState(true);
  const [name,setName]=useState("");
  const [email,setEmail]=useState("");
@@ -300,10 +193,10 @@ function ClientPortalControl() {
 }
 
 function LiveModuleSection({active}:{active:string}) {
- const [rows,setRows]=useState<any[]>([]);
+ const [rows,setRows]=useState<ModuleRecord[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
- const config:Record<string,{table:string;select:string;title:string;columns:string[];map:(row:any)=>string[]}> = {
+ const config:Record<string,{table:string;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}> = {
   "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
   "Calendrier":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Lieu","Statut"],map:r=>[r.title,r.organizations?.name??"Client",r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status]},
   "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name,r.organizations?.name??"Client",r.plan_name??"—",String(r.included_hours??0)+" h",r.status]},
@@ -317,12 +210,11 @@ function LiveModuleSection({active}:{active:string}) {
   if(!current){setRows([]);setLoading(false);return;}
   setLoading(true);setError("");
   createClient().from(current.table).select(current.select).order("created_at",{ascending:false}).limit(100)
-   .then(({data,error})=>{if(error)setError(error.message);else setRows(data??[]);setLoading(false);});
+   .then(({data,error})=>{if(error)setError(error.message);else setRows((data??[]) as ModuleRecord[]);setLoading(false);});
  },[active]);
  if(active==="Paramètres")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Les contrôles de sécurité et de gestion de la plateforme.</p></div></div><div className="admin-settings-grid">{settings.map(item=>{const Icon=item.icon;return <article className="admin-panel settings-card" key={item.title}><span className="settings-card-icon"><Icon size={19}/></span><span className="settings-card-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><button type="button" disabled>Configuration à venir <ChevronRight size={14}/></button></article>;})}</div></div>;
  if(active==="Hébergement")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">PLATEFORME · INFRASTRUCTURE</div><h1>Hébergement</h1><p>Services techniques utilisés par BN2 HUB.</p></div><span className="section-demo-label">CONFIGURATION ACTUELLE</span></div><section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>Infrastructure</h3><p>État de configuration, pas une mesure de disponibilité.</p></div></div><div className="section-info-grid"><div className="section-info-card"><Database size={18}/><div><strong>Supabase · région EU West</strong><p>Base PostgreSQL 17, Auth et stockage privé BN2.</p></div></div><div className="section-info-card"><Globe size={18}/><div><strong>Vercel · Next.js</strong><p>Application hébergée sur le projet bn-2-hub.</p></div></div><div className="section-info-card"><ShieldCheck size={18}/><div><strong>Isolation multi-tenant</strong><p>RLS activée sur les tables métier et documents privés.</p></div></div></div></section></div>;
  if(!current)return <div className="admin-content"><div className="page-heading"><h1>{active}</h1><p>Module non configuré.</p></div></div>;
- const values=rows.map(current.map);
  return <div className="admin-content admin-section-content">
   <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{current.title} enregistrés dans Supabase.</p></div><span className="section-demo-label">DONNÉES EN DIRECT</span></div>
   <div className="section-metrics"><article className="admin-panel section-metric"><span>Enregistrements</span><strong>{rows.length}</strong><small>Résultats accessibles à votre compte</small></article></div>
