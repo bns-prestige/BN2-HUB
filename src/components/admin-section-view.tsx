@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
-  ChevronRight, CircleAlert, Clock3, FileText, Plus, ShieldCheck, Sparkles, Users,
+  Check, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, Monitor, Plus, Power, ShieldCheck, Sparkles, Users,
 } from "lucide-react";
 
 type Row = { cells: string[]; status?: string; priority?: string };
@@ -123,8 +124,50 @@ const settings = [
   {icon:ShieldCheck,title:"Hébergement & infrastructure",text:"Domaines, stockage, sauvegardes et disponibilité",tag:"Infrastructure"},
 ];
 
+function ClientPortalControl() {
+  const [client, setClient] = useState("Atelier Nova");
+  const [active, setActive] = useState(true);
+  const [modules, setModules] = useState(["Support", "Parc informatique", "Documents", "Microsoft 365"]);
+  const [saved, setSaved] = useState(false);
+  const clients = [
+    { name: "Atelier Nova", domain: "atelier-nova.bn2hub.be", users: "8 utilisateurs", plan: "Support essentiel" },
+    { name: "Groupe Horizon", domain: "groupe-horizon.bn2hub.be", users: "14 utilisateurs", plan: "Gestion informatique" },
+    { name: "Cabinet Dewael", domain: "cabinet-dewael.bn2hub.be", users: "6 utilisateurs", plan: "Support essentiel" },
+  ];
+  const current = clients.find((item) => item.name === client) ?? clients[0];
+  const options = [
+    { name: "Support", description: "Tickets et échanges avec BN2", icon: LifeBuoy },
+    { name: "Parc informatique", description: "Matériel, appareils et licences", icon: Monitor },
+    { name: "Documents", description: "Contrats et fichiers partagés", icon: FileText },
+    { name: "Microsoft 365", description: "Comptes et services cloud", icon: Cloud },
+    { name: "Utilisateurs", description: "Comptes et permissions client", icon: Users },
+  ];
+  function toggleModule(name: string) {
+    setSaved(false);
+    setModules((items) => items.includes(name) ? items.filter((item) => item !== name) : [...items, name]);
+  }
+  return <div className="admin-content admin-section-content">
+    <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> GESTION MULTI-CLIENT</div><h1>Centre de contrôle client</h1><p>Configurez les accès et les fonctionnalités de chaque portail depuis BN2 HUB.</p></div><span className="section-demo-label">MODE APERÇU · NON PUBLIÉ</span></div>
+    <div className="portal-control-layout">
+      <section className="admin-panel portal-client-list"><div className="panel-heading"><div><h3>Organisations</h3><p>Sélectionnez un espace client.</p></div><span className="section-record-count">3 clients</span></div>
+        {clients.map((item) => <button key={item.name} className={`portal-client-choice ${client === item.name ? "selected" : ""}`} onClick={() => {setClient(item.name);setSaved(false);}}>
+          <span className="portal-client-avatar">{item.name.split(" ").map((word) => word[0]).join("").slice(0,2)}</span><span className="portal-client-copy"><strong>{item.name}</strong><small>{item.plan}</small></span><ChevronRight size={16}/>
+        </button>)}
+      </section>
+      <section className="admin-panel portal-config-panel">
+        <div className="portal-config-heading"><div><div className="page-eyebrow">CONFIGURATION DE L'ESPACE</div><h2>{current.name}</h2><p>{current.users} · {current.plan}</p></div><button className={`portal-status-toggle ${active ? "is-active" : ""}`} onClick={() => {setActive(!active);setSaved(false);}}><Power size={15}/>{active ? "Portail actif" : "Portail suspendu"}</button></div>
+        <div className="portal-domain-row"><Globe size={17}/><div><small>ADRESSE DU PORTAIL</small><strong>{current.domain}</strong></div><span>SOUS-DOMAINE BN2</span></div>
+        <div className="portal-module-heading"><div><h3>Modules et autorisations</h3><p>Activez uniquement les outils inclus pour cette organisation.</p></div><span>{modules.length} / {options.length}</span></div>
+        <div className="portal-module-list">{options.map((item) => {const Icon=item.icon;const enabled=modules.includes(item.name);return <button key={item.name} className={`portal-module-row ${enabled ? "enabled" : ""}`} onClick={() => toggleModule(item.name)}><span className="portal-module-icon"><Icon size={17}/></span><span className="portal-module-copy"><strong>{item.name}</strong><small>{item.description}</small></span><span className={`portal-check ${enabled ? "checked" : ""}`}>{enabled && <Check size={13}/>}</span></button>;})}</div>
+        <div className="portal-control-footer"><div><strong>Les changements restent locaux dans cet aperçu.</strong><small>La sauvegarde, les rôles et l'application réelle seront reliés à Supabase après validation de la sécurité multi-tenant.</small></div><button className="admin-primary-button" onClick={() => setSaved(true)}><Check size={15}/> {saved ? "Aperçu enregistré" : "Enregistrer l'aperçu"}</button></div>
+      </section>
+    </div>
+    <div className="section-info-grid"><div className="admin-panel section-info-card"><div className="section-info-icon"><ShieldCheck size={17}/></div><div><strong>Isolation par organisation</strong><p>Chaque client aura ses propres données, membres et permissions, protégés par les règles RLS.</p></div></div><div className="admin-panel section-info-card"><div className="section-info-icon"><Database size={17}/></div><div><strong>Infrastructure mutualisée</strong><p>Une seule plateforme BN2 HUB, avec des espaces isolés et des sous-domaines dédiés par client.</p></div></div></div>
+  </div>;
+}
+
 export default function AdminSectionView({ active }: { active: string }) {
-  const data = sections[active];
+  if (active === "Portails clients") return <ClientPortalControl />;\n  const data = sections[active];
   if (!data) {
     return <div className="admin-content admin-section-content">
       <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Configurez les règles de fonctionnement de votre espace administrateur.</p></div></div>
