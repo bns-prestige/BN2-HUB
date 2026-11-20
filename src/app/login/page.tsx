@@ -1,14 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
-  const search = useSearchParams();
+  const [notice, setNotice] = useState("");
+  useEffect(() => { const params = new URLSearchParams(window.location.search); if (params.get("error")) setNotice("Accès refusé ou lien de connexion expiré. Réessayez ou contactez BN2."); }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -49,8 +50,7 @@ export default function LoginPage() {
       <p className="bn2-login-eyebrow">ESPACE SÉCURISÉ</p>
       <h1>Bienvenue.</h1>
       <p className="bn2-login-subtitle">Connectez-vous à votre espace BN2 Consulting.</p>
-      {search.get("error") === "forbidden" && <div className="bn2-login-error">Ce compte ne dispose pas d'un accès actif.</div>}
-      {search.get("error") === "configuration" && <div className="bn2-login-error">La configuration de connexion doit être vérifiée.</div>}
+      {notice && <div className="bn2-login-error">{notice}</div>}
       {error && <div className="bn2-login-error">{error}</div>}
       <form onSubmit={submit}>
         <label>Adresse e-mail<div className="bn2-login-input"><Mail size={17}/><input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="nom@entreprise.be"/></div></label>
