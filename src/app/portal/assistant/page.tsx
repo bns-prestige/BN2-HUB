@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import Link from "next/link";
-import { ArrowLeft, Bot, Check, ChevronRight, Clock3, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Square, UserRound } from "lucide-react";
+import { ArrowLeft, Bot, ChevronRight, Clock3, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Square, UserRound } from "lucide-react";
 import "./assistant.css";
 
 type Conversation = { id:string; title:string; channel:string; status:string; updated_at:string };
@@ -26,15 +26,15 @@ export default function ClientAssistantPage() {
     }),
   });
 
-  async function refreshConversations() {
+  const refreshConversations = useCallback(async () => {
     const response = await fetch("/api/assistant/conversations", { cache:"no-store" });
     if (!response.ok) throw new Error("Impossible de charger l'historique.");
     const result = await response.json() as { conversations:Conversation[] };
     setConversations(result.conversations ?? []);
     return result.conversations ?? [];
-  }
+  }, []);
 
-  async function openConversation(id:string) {
+  const openConversation = useCallback(async (id:string) => {
     setSwitching(true); setErrorMessage(""); conversationIdRef.current=id; setConversationId(id);
     try {
       const response = await fetch("/api/assistant/conversations/"+id, { cache:"no-store" });
@@ -49,9 +49,9 @@ export default function ClientAssistantPage() {
     } catch (cause) {
       setErrorMessage(cause instanceof Error ? cause.message : "Erreur de chargement.");
     } finally { setSwitching(false); setLoading(false); }
-  }
+  }, [setMessages]);
 
-  async function createConversation() {
+  const createConversation = useCallback(async () => {
     setErrorMessage(""); setSwitching(true);
     try {
       const response = await fetch("/api/assistant/conversations", { method:"POST" });
@@ -64,7 +64,7 @@ export default function ClientAssistantPage() {
     } catch (cause) {
       setErrorMessage(cause instanceof Error ? cause.message : "Erreur de création.");
     } finally { setSwitching(false); setLoading(false); }
-  }
+  }, [refreshConversations, setMessages]);
 
   useEffect(() => {
     async function initialise() {
@@ -78,13 +78,13 @@ export default function ClientAssistantPage() {
       }
     }
     void initialise();
-  }, []);
+  }, [createConversation, openConversation]);
 
   useEffect(() => {
     if (status === "ready" && conversationId) {
       void refreshConversations().catch(() => undefined);
     }
-  }, [status,conversationId]);
+  }, [status,conversationId,refreshConversations]);
 
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,7 +138,7 @@ export default function ClientAssistantPage() {
             {status==="submitted" || status==="streaming" ? <button type="button" className="bn2-assistant-stop" onClick={()=>stop()}><Square size={13}/> Arrêter</button> : <button type="submit" disabled={!input.trim() || !conversationId || loading || switching}><Send size={15}/> Envoyer</button>}
           </div>
         </form>
-        <p className="bn2-assistant-disclaimer">L'assistant peut se tromper. Ne partagez jamais de mot de passe, code de vérification ou information bancaire.</p>
+        <p className="bn2-assistant-disclaimer">L&apos;assistant peut se tromper. Ne partagez jamais de mot de passe, code de vérification ou information bancaire.</p>
       </section>
     </div>
   </main>;

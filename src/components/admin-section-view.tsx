@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   ChevronRight, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
@@ -50,9 +50,9 @@ function SupportQueue() {
  },[]);
 
  useEffect(()=>{
-  if(!current)return;
-  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",current.recordId).order("created_at",{ascending:true}).then(({data})=>setMessages(((data??[]) as {body:string}[]).map((item)=>item.body)));
- },[current?.recordId]);
+  if(!selected)return;
+  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",selected).order("created_at",{ascending:true}).then(({data})=>setMessages(((data??[]) as {body:string}[]).map((item)=>item.body)));
+ },[selected]);
 
  async function updateStatus(status:QueueStatus){
   if(!current)return;setSaving(true);
@@ -112,13 +112,13 @@ function ClientPortalControl() {
  const [inviteError,setInviteError]=useState("");
  const [invitationUrl,setInvitationUrl]=useState("");
 
- async function load(){
+ const load=useCallback(async()=>{
   setLoading(true);
   const {data,error}=await createClient().from("organizations").select("id,name,slug,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
-  if(error)setError(error.message);else{setClients(data??[]);if(!selectedOrganizationId&&data?.[0])setSelectedOrganizationId(data[0].id);}
+  if(error)setError(error.message);else{setClients(data??[]);setSelectedOrganizationId(current=>current||data?.[0]?.id||"");}
   setLoading(false);
- }
- useEffect(()=>{void load();},[]);
+ },[]);
+ useEffect(()=>{void load();},[load]);
 
  async function createOrganization(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setSaving(true);
