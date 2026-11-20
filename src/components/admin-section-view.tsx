@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/database.types";
 import {
   ChevronRight, Copy, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
@@ -197,7 +198,8 @@ function LiveModuleSection({active}:{active:string}) {
  const [rows,setRows]=useState<ModuleRecord[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
- const config=useMemo<Record<string,{table:string;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}>>(()=>({
+ type PublicTable = keyof Database["public"]["Tables"];
+ const config=useMemo<Record<string,{table:PublicTable;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}>>(()=>({
   "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status??"—"]},
   "Calendrier":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Lieu","Statut"],map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status??"—"]},
   "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name??"—",moduleOrganizationName(r),r.plan_name??"—",String(r.included_hours??0)+" h",r.status??"—"]},
