@@ -106,7 +106,7 @@ export default function AdminSectionView({ active }: { active: string }) {
     return <div className="admin-content admin-section-content">
       <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Configurez les règles de fonctionnement de votre espace administrateur.</p></div></div>
       <div className="admin-settings-grid">{settings.map((item) => {const Icon=item.icon;return <article className="admin-panel settings-card" key={item.title}><span className="settings-card-icon"><Icon size={19}/></span><span className="settings-card-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><button type="button" disabled>Configurer <ChevronRight size={14}/></button></article>;})}</div>
-      <div className="admin-panel settings-security-note"><ShieldCheck size={18}/><div><strong>Les réglages sensibles seront protégés par des permissions administrateur.</strong><p>Les modifications d'accès et de sécurité seront journalisées et devront être confirmées.</p></div></div>
+      <div className="admin-panel settings-security-note"><ShieldCheck size={18}/><div><strong>Les réglages sensibles seront protégés par des permissions administrateur.</strong><p>Les modifications d&apos;accès et de sécurité seront journalisées et devront être confirmées.</p></div></div>
     </div>;
   }
   return <div className="admin-content admin-section-content">
