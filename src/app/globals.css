@@ -195,3 +195,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
  .queue-kpis{grid-template-columns:1fr 1fr}
  .queue-layout{grid-template-columns:1fr}
 }
+
+
+/* BN2 HUB — time tracking */
+.bn2-worklog-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:0 0 13px}
+.bn2-worklog-metrics article{display:grid;gap:8px;padding:15px 17px;border:1px solid #e7ebf1;border-radius:11px;background:#fff}
+.bn2-worklog-metrics article>span{display:flex;align-items:center;gap:7px;color:#748398;font-size:9px}
+.bn2-worklog-metrics article>span svg{color:#2878d4}
+.bn2-worklog-metrics article>strong{font:700 23px "Sora";color:#1c2c40}
+.bn2-worklog-metrics article>small{font-size:8px;color:#8996a7}
+.bn2-worklog-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:15px}
+.bn2-worklog-search{display:flex;align-items:center;gap:8px;flex:1;min-width:220px;height:36px;padding:0 10px;border:1px solid #e6ebf1;border-radius:8px;background:#fbfcfe;color:#8795a7}
+.bn2-worklog-search input{width:100%;border:0;outline:0;background:transparent;color:#24364b;font-size:9px}
+.bn2-worklog-toolbar select{height:36px;padding:0 10px;border:1px solid #e6ebf1;border-radius:8px;background:#fff;color:#52667f;font-size:9px}
+.bn2-worklog-tag{display:inline-flex;padding:4px 7px;border-radius:6px;font-size:8px;font-weight:700;white-space:nowrap}
+.bn2-worklog-tag.billable{background:#eaf8f1;color:#23825e}
+.bn2-worklog-tag.nonbillable{background:#f1f4f7;color:#728095}
+@media(max-width:760px){.bn2-worklog-metrics{grid-template-columns:1fr 1fr}.bn2-worklog-toolbar{align-items:stretch}.bn2-worklog-search{flex-basis:100%}.bn2-worklog-toolbar select{flex:1;min-width:0}}
