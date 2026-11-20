@@ -44,7 +44,7 @@ export default function ClientPortalPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Ordinateur & matériel");
-  const [priority, setPriority] = useState("Normale");
+  const [priority, setPriority] = useState<RequestItem["priority"]>("Normale");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [success, setSuccess] = useState("");
