@@ -22,7 +22,8 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isLogin = path === "/login";
   const isPortal = path.startsWith("/portal");
-  const isProtected = path === "/" || path.startsWith("/client-builder") || isPortal;
+  const isAiAdmin = path.startsWith("/ai-admin");
+  const isProtected = path === "/" || path.startsWith("/client-builder") || isPortal || isAiAdmin;
 
   if (isProtected && !user) {
     const target = request.nextUrl.clone();
@@ -37,7 +38,7 @@ export async function updateSession(request: NextRequest) {
     if (isLogin) {
       return NextResponse.redirect(new URL(isAdmin ? "/" : "/portal", request.url));
     }
-    if ((path === "/" || path.startsWith("/client-builder")) && !isAdmin) {
+    if ((path === "/" || path.startsWith("/client-builder") || isAiAdmin) && !isAdmin) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
     if (isPortal && !isAdmin) {
