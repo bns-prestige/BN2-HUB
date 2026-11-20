@@ -22,7 +22,7 @@ export async function POST(request:Request){
   organization_id:organizationId,created_by:user.id,title,description,category,priority,
   assigned_to:typeof body.assignedTo==="string"&&body.assignedTo?body.assignedTo:null,
   due_at:typeof body.dueAt==="string"&&body.dueAt?body.dueAt:null,
- }).select("id,ticket_number,title,status,priority,created_at").single();
+ }).select("id,ticket_number,title,description,category,status,priority,created_at").single();
  if(error||!ticket)return NextResponse.json({error:error?.message??"ticket_create_failed"},{status:400});
  const email=await notifyTicketCreated(organizationId,ticket,user.id);
  return NextResponse.json({ticket,emailSent:email.sent},{status:201});
