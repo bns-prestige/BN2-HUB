@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ChevronRight, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
+  ChevronRight, Copy, Database, FileText, Globe, Plus, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
 
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
@@ -227,8 +227,92 @@ function LiveModuleSection({active}:{active:string}) {
  </div>;
 }
 
+
+type StaffRecord = {
+ id:string; user_id:string; employee_number:string|null; department:string; job_title:string;
+ employment_status:"invited"|"active"|"on_leave"|"suspended"|"terminated";
+ permissions:Record<string,boolean>; profile:{full_name:string|null;email:string|null}|null;
+};
+const staffPermissionOptions=[
+ ["tickets.read","Voir les demandes"],["tickets.manage","Gérer les demandes"],
+ ["interventions.read","Voir les interventions"],["interventions.manage","Gérer les interventions"],
+ ["clients.read","Voir les entreprises"],["contracts.read","Voir les contrats"],
+ ["assets.read","Voir le parc informatique"],["assets.manage","Gérer le parc informatique"],
+ ["documents.read","Voir les documents"],["documents.manage","Gérer les documents"],
+ ["worklogs.read","Voir les temps prestés"],["worklogs.create","Encoder du temps"],
+] as const;
+const defaultStaffPermissions:Record<string,boolean>={
+ "tickets.read":true,"tickets.manage":true,"interventions.read":true,"interventions.manage":true,
+ "clients.read":true,"contracts.read":true,"assets.read":true,"assets.manage":false,
+ "documents.read":true,"documents.manage":false,"worklogs.read":true,"worklogs.create":true,
+};
+function StaffManagement(){
+ const [staff,setStaff]=useState<StaffRecord[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [saving,setSaving]=useState(false);
+ const [formOpen,setFormOpen]=useState(false);
+ const [search,setSearch]=useState("");
+ const [fullName,setFullName]=useState("");
+ const [email,setEmail]=useState("");
+ const [department,setDepartment]=useState("Support IT");
+ const [jobTitle,setJobTitle]=useState("Technicien IT");
+ const [employeeNumber,setEmployeeNumber]=useState("");
+ const [permissions,setPermissions]=useState<Record<string,boolean>>(defaultStaffPermissions);
+ const [inviteLink,setInviteLink]=useState("");
+ const [error,setError]=useState("");
+ const [notice,setNotice]=useState("");
+ const load=useCallback(async()=>{
+  setLoading(true);
+  const response=await fetch("/api/admin/staff",{cache:"no-store"});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Impossible de charger l'équipe.");
+  else setStaff(result.staff??[]);
+  setLoading(false);
+ },[]);
+ useEffect(()=>{void load();},[load]);
+ async function invite(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();setSaving(true);setError("");setNotice("");setInviteLink("");
+  const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Invitation impossible.");
+  else{setInviteLink(result.inviteLink??"");setNotice("Fiche employé créée. Transmettez le lien sécurisé à la personne invitée.");setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();}
+  setSaving(false);
+ }
+ async function updateStatus(member:StaffRecord,status:StaffRecord["employment_status"]){
+  const response=await fetch("/api/admin/staff",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:member.id,status})});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Mise à jour impossible.");
+  else{setNotice("Accès employé mis à jour.");await load();}
+ }
+ const visible=staff.filter(member=>[member.profile?.full_name,member.profile?.email,member.department,member.job_title,member.employee_number].join(" ").toLowerCase().includes(search.toLowerCase()));
+ const statusLabel:Record<StaffRecord["employment_status"],string>={invited:"Invité",active:"Actif",on_leave:"En congé",suspended:"Suspendu",terminated:"Terminé"};
+ return <div className="admin-content admin-section-content bn2-staff-admin">
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> RESSOURCES HUMAINES</div><h1>Équipe BN2</h1><p>Invitez les collaborateurs, attribuez leurs permissions et gérez leurs accès.</p></div><button className="admin-primary-button" onClick={()=>setFormOpen(true)}><Plus size={15}/> Ajouter un employé</button></div>
+  {error&&<div className="bn2-staff-admin-alert error">{error}</div>}
+  {notice&&<div className="bn2-staff-admin-alert success">{notice}</div>}
+  {inviteLink&&<div className="bn2-staff-invite-link"><div><strong>Lien d&apos;invitation sécurisé</strong><span>Copiez et transmettez ce lien à l&apos;employé. Il devra définir son mot de passe à la première ouverture.</span><input readOnly value={inviteLink}/></div><button onClick={()=>void navigator.clipboard.writeText(inviteLink)}><Copy size={14}/> Copier le lien</button></div>}
+  <section className="admin-panel bn2-staff-admin-panel">
+   <div className="bn2-staff-admin-toolbar"><div><Users size={17}/><strong>{staff.length} collaborateur{staff.length>1?"s":""}</strong></div><label><Search size={15}/><input value={search} onChange={event=>setSearch(event.target.value)} placeholder="Rechercher un employé..."/></label></div>
+   {loading?<div className="bn2-staff-admin-empty">Chargement de l&apos;équipe...</div>:visible.length===0?<div className="bn2-staff-admin-empty">Aucun collaborateur trouvé.</div>:<div className="bn2-staff-admin-list">
+    {visible.map(member=><article className="bn2-staff-admin-row" key={member.id}><div className="bn2-staff-admin-avatar">{(member.profile?.full_name??"BN").split(" ").map(part=>part[0]).join("").slice(0,2).toUpperCase()}</div><div className="bn2-staff-admin-person"><strong>{member.profile?.full_name??"Compte employé"}</strong><small>{member.profile?.email??"E-mail indisponible"}</small></div><div className="bn2-staff-admin-role"><strong>{member.job_title}</strong><small>{member.department}{member.employee_number?" · "+member.employee_number:""}</small></div><span className={"bn2-staff-admin-status "+member.employment_status}>{statusLabel[member.employment_status]}</span><div className="bn2-staff-admin-actions">
+     {member.employment_status==="invited"&&<button onClick={()=>void updateStatus(member,"active")}>Activer</button>}
+     {member.employment_status==="active"&&<button onClick={()=>void updateStatus(member,"suspended")}>Suspendre</button>}
+     {member.employment_status==="suspended"&&<button onClick={()=>void updateStatus(member,"active")}>Réactiver</button>}
+     {member.employment_status!=="terminated"&&<button className="danger" onClick={()=>void updateStatus(member,"terminated")}>Terminer</button>}
+    </div></article>)}
+   </div>}
+  </section>
+  {formOpen&&<div className="modal-backdrop" onClick={()=>setFormOpen(false)}><form className="bn2-staff-admin-modal" onSubmit={invite} onClick={event=>event.stopPropagation()}><div className="bn2-staff-admin-modal-head"><div><h2>Inviter un employé</h2><p>Créez son accès et configurez ses permissions.</p></div><button type="button" onClick={()=>setFormOpen(false)}>×</button></div>
+   <div className="bn2-staff-admin-fields"><label>Nom complet<input required minLength={2} value={fullName} onChange={event=>setFullName(event.target.value)} placeholder="Prénom Nom"/></label><label>Adresse e-mail<input type="email" required value={email} onChange={event=>setEmail(event.target.value)} placeholder="prenom@bn2consulting.be"/></label><label>Département<select value={department} onChange={event=>setDepartment(event.target.value)}><option>Support IT</option><option>Infrastructure & Réseaux</option><option>Cybersécurité</option><option>Cloud & Microsoft 365</option><option>Administration</option></select></label><label>Fonction<input value={jobTitle} onChange={event=>setJobTitle(event.target.value)} required/></label><label>Matricule<input value={employeeNumber} onChange={event=>setEmployeeNumber(event.target.value)} placeholder="BN2-EMP-001"/></label></div>
+   <div className="bn2-staff-permissions-title">Permissions de l&apos;employé</div><div className="bn2-staff-permissions">{staffPermissionOptions.map(([key,label])=><label key={key}><input type="checkbox" checked={permissions[key]===true} onChange={event=>setPermissions(value=>({...value,[key]:event.target.checked}))}/>{label}</label>)}</div>
+   <div className="bn2-staff-admin-modal-footer"><button type="button" className="secondary" onClick={()=>setFormOpen(false)}>Annuler</button><button type="submit" disabled={saving}><Send size={14}/>{saving?"Création...":"Créer et générer l'invitation"}</button></div>
+  </form></div>}
+ </div>;
+}
+
 export default function AdminSectionView({ active }: { active: string }) {
   if (active === "Demandes support") return <SupportQueue />;
+  if (active === "Équipe BN2") return <StaffManagement />;
   if (active === "Portails clients") return <ClientPortalControl />;
   return <LiveModuleSection active={active} />;
 }
