@@ -35,3 +35,44 @@
 
 
 .client-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}.client-guide-grid article{background:#fff;border:1px solid #e3eaf2;border-radius:12px;padding:16px}.client-guide-grid article>span{width:34px;height:34px;border-radius:10px;background:#edf4ff;color:#1768d2;display:grid;place-items:center}.client-guide-grid h3{font-size:12px;color:#35465c;margin:12px 0 7px}.client-guide-grid p{font-size:10px;color:#77869b;line-height:1.65;margin:0 0 10px;white-space:pre-wrap}.client-guide-grid small{font-size:8px;color:#1768d2}@media(max-width:650px){.client-guide-grid{grid-template-columns:1fr}}
+
+
+/* BN2 HUB shared design language — client workspace */
+.client-portal{background:#f5f7fa;color:#18283b}
+.client-sidebar{background:#111d2c;border-right:0;color:#f4f7fb;box-shadow:8px 0 28px #0c192b12}
+.client-brand{border-color:#2a394c}
+.client-brand-mark{border-radius:10px;background:#2878d4;box-shadow:0 5px 15px #2878d440}
+.client-brand strong{color:#fff}.client-brand strong span{color:#83b9f2}.client-brand small{color:#91a1b5}
+.client-org-switch{border-color:#2a394c;background:#172638;color:#eef3f9;border-radius:10px}
+.client-org-avatar{background:#29415d;color:#c3e0ff;border-radius:8px}
+.client-org-switch small,.client-org-switch>svg{color:#91a1b5}
+.client-nav-label{color:#74849a}
+.client-nav button{border-radius:8px;color:#aeb9c8}
+.client-nav button:hover{background:#1c2b3e;color:#fff}
+.client-nav button.active{background:#233d59;color:#a7d1ff}
+.client-nav button small{background:#29415d;color:#a7d1ff}
+.client-sidebar-bottom{border-color:#2a394c}
+.client-help-card{border-color:#2a394c;background:#172638;color:#eaf0f7}
+.client-help-card p{color:#9aa9bb}
+.client-help-card button{background:#2878d4;color:#fff;border-radius:8px}
+.client-main{background:#f5f7fa}
+.client-topbar{background:#ffffffeb;border-bottom:1px solid #e7ebf1;backdrop-filter:blur(14px)}
+.client-breadcrumb{color:#8794a5}
+.client-breadcrumb strong{color:#24364b}
+.client-content{max-width:1500px;padding:30px clamp(18px,3vw,40px)}
+.client-welcome h1,.client-page-heading h1{font-family:"Sora";letter-spacing:-.8px;color:#18283b}
+.client-welcome p,.client-page-heading p{color:#7b899b}
+.client-eyebrow{color:#2878d4}
+.client-hero{border-radius:13px;background:linear-gradient(105deg,#172b43 0%,#214b72 65%,#2878d4 100%);box-shadow:0 9px 22px #18395818}
+.client-hero-copy>span{color:#c1d9f1}
+.client-hero-copy h2{font-family:"Sora";letter-spacing:-.7px}
+.client-hero-copy p{color:#d5e3f1}
+.client-category-grid>button,.client-request-card,.client-panel,.client-invoice-card,.client-document-card{border:1px solid #e7ebf1;border-radius:11px;background:#fff;box-shadow:0 8px 28px #14263e08}
+.client-category-grid>button:hover,.client-request-card:hover,.client-document-card:hover{border-color:#c5d9ee;transform:translateY(-1px)}
+.client-category-grid>button>span{background:#edf5ff;color:#2878d4;border-radius:8px}
+.client-section-heading h2{font-family:"Sora";color:#24364b}
+.client-section-heading p{color:#8996a7}
+.client-section-heading button{color:#2878d4}
+.client-notice{border-radius:9px}
+.client-portal button:focus-visible,.client-portal a:focus-visible,.client-portal input:focus-visible,.client-portal textarea:focus-visible,.client-portal select:focus-visible{outline:3px solid #2878d455;outline-offset:2px}
+@media(max-width:700px){.client-content{padding:20px 13px}.client-hero{border-radius:11px}.client-welcome h1,.client-page-heading h1{font-size:24px}}
