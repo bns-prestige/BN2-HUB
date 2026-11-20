@@ -212,3 +212,32 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .bn2-worklog-tag.billable{background:#eaf8f1;color:#23825e}
 .bn2-worklog-tag.nonbillable{background:#f1f4f7;color:#728095}
 @media(max-width:760px){.bn2-worklog-metrics{grid-template-columns:1fr 1fr}.bn2-worklog-toolbar{align-items:stretch}.bn2-worklog-search{flex-basis:100%}.bn2-worklog-toolbar select{flex:1;min-width:0}}
+
+
+/* BN2 HUB — intervention calendar */
+.bn2-calendar-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:12px}
+.bn2-calendar-panel,.bn2-calendar-day-panel{padding:17px}
+.bn2-calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.bn2-calendar-toolbar>div:first-child{display:grid;gap:4px}
+.bn2-calendar-toolbar strong{font:700 14px "Sora";text-transform:capitalize;color:#24364b}
+.bn2-calendar-toolbar small{font-size:8px;color:#8996a7}
+.bn2-calendar-toolbar>div:last-child{display:flex;align-items:center;gap:5px}
+.bn2-calendar-toolbar button{height:31px;min-width:31px;padding:0 9px;border:1px solid #e6ebf1;border-radius:7px;background:#fff;color:#607187;font-size:8px}
+.bn2-calendar-toolbar button:hover{background:#f3f8fd;border-color:#cbdced}
+.bn2-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #edf0f4;border-left:1px solid #edf0f4}
+.bn2-calendar-weekday{display:grid;place-items:center;min-height:30px;border-right:1px solid #edf0f4;border-bottom:1px solid #edf0f4;color:#8996a7;font-size:8px;font-weight:800}
+.bn2-calendar-day{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:76px;padding:8px;border:0;border-right:1px solid #edf0f4;border-bottom:1px solid #edf0f4;background:#fff;color:#35475d;text-align:left}
+.bn2-calendar-day>span{font-size:9px;font-weight:800}
+.bn2-calendar-day i{font-style:normal;padding:3px 5px;border-radius:5px;background:#edf5ff;color:#2878d4;font-size:7px;font-weight:700}
+.bn2-calendar-day:hover{background:#f8fbff}
+.bn2-calendar-day.outside{background:#fafbfd;color:#b1bac5}
+.bn2-calendar-day.selected{background:#f1f7fd;box-shadow:inset 0 0 0 1px #9fc6ed}
+.bn2-calendar-day.today>span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#2878d4;color:#fff}
+.bn2-calendar-event{display:grid;gap:7px;padding:12px 0;border-bottom:1px solid #edf0f4}
+.bn2-calendar-event>div{display:grid;gap:4px}
+.bn2-calendar-event>div strong{font-size:10px;color:#2d4056}
+.bn2-calendar-event>div span,.bn2-calendar-event p{font-size:8px;color:#8996a7}
+.bn2-calendar-event>small{font-size:9px;color:#2878d4;font-weight:800}
+.bn2-calendar-event p{margin:0}
+@media(max-width:950px){.bn2-calendar-layout{grid-template-columns:1fr}}
+@media(max-width:600px){.bn2-calendar-panel,.bn2-calendar-day-panel{padding:12px}.bn2-calendar-day{min-height:58px;padding:6px}.bn2-calendar-day i{font-size:6px;padding:2px 3px}.bn2-calendar-toolbar strong{font-size:12px}}
