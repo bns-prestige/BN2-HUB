@@ -45,7 +45,7 @@ export default function AdminHome() {
   async function signOut() { await createClient().auth.signOut(); window.location.assign("/login"); }
   const filteredTickets = useMemo(() => tickets.filter((ticket) =>
     [ticket.id, ticket.subject, ticket.client, ticket.type].join(" ").toLowerCase().includes(query.toLowerCase())
-  ), [query]);
+  ), [tickets, query]);
 
   return (
     <main className="admin-shell">
