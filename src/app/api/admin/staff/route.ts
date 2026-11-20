@@ -105,14 +105,14 @@ export async function PATCH(request:Request) {
   if(typeof body.department==="string")update.department=body.department.trim().slice(0,100);
   if(typeof body.jobTitle==="string")update.job_title=body.jobTitle.trim().slice(0,120);
   if(typeof body.employeeNumber==="string")update.employee_number=body.employeeNumber.trim()||null;
-  if(typeof body.status==="string"&&["invited","active","on_leave","suspended","terminated"].includes(body.status))update.employment_status=body.status;
+  if(typeof body.status==="string"&&["invited","active","on_leave","suspended","terminated"].includes(body.status))update.employment_status=body.status as NonNullable<typeof update.employment_status>;
   if(body.permissions&&typeof body.permissions==="object")update.permissions=cleanPermissions(body.permissions);
   if(typeof body.startedOn==="string")update.started_on=body.startedOn||null;
   if(typeof body.endedOn==="string")update.ended_on=body.endedOn||null;
   const {error:updateError}=await admin.from("staff_members").update(update).eq("id",id);
   if(updateError)return NextResponse.json({error:updateError.message},{status:400});
-  if(typeof body.status==="string"){
-    const enabled=body.status==="active"||body.status==="invited";
+  if(update.employment_status){
+    const enabled=update.employment_status==="active"||update.employment_status==="invited";
     const {data:userData}=await admin.auth.admin.getUserById(member.user_id);
     if(userData.user)await admin.auth.admin.updateUserById(member.user_id,{app_metadata:{...(userData.user.app_metadata??{}),role:enabled?"bn2_staff":"bn2_disabled"}});
   }
