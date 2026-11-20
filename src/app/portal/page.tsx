@@ -1,5 +1,7 @@
 "use client";
 
+import "./portal.css";
+
 import { useMemo, useState } from "react";
 import {
   ArrowRight, Bell, BookOpen, CheckCircle2, ChevronDown, ChevronRight, Clock3,
