@@ -1,3 +1,5 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+
 export type Bn2EmailMessage = {
  to:string[];
  subject:string;
