@@ -99,7 +99,10 @@ export default function InvoiceManager(){
   if(itemsError){await supabase.from("service_invoices").delete().eq("id",invoice.id);setError(itemsError.message);setSaving(false);return;}
   const {error:issueError}=await supabase.from("service_invoices").update({status:"issued"}).eq("id",invoice.id);
   if(issueError){setError(issueError.message);setSaving(false);return;}
-  setNotice("Facture "+invoice.invoice_number+" créée et émise.");setCreateOpen(false);resetCreate();await load();setSaving(false);
+  const emailResponse=await fetch("/api/admin/invoices/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceId:invoice.id,event:"issued"})});
+  const emailResult=await emailResponse.json();
+  setNotice("Facture "+invoice.invoice_number+" créée et émise."+(emailResult.emailSent>0?" E-mail envoyé au client.":" Notification e-mail non envoyée (configuration inactive ou destinataire absent)."));
+  setCreateOpen(false);resetCreate();await load();setSaving(false);
  }
 
  async function recordPayment(event:FormEvent<HTMLFormElement>){
@@ -113,7 +116,12 @@ export default function InvoiceManager(){
    method:paymentMethod,status:"succeeded",reference:paymentReference.trim()||null,paid_at:new Date().toISOString(),recorded_by:user?.id??null,
   });
   if(paymentError)setError(paymentError.message);
-  else{setNotice("Paiement enregistré. Le statut de la facture est recalculé automatiquement.");setPaymentInvoice(null);setPaymentAmount("");setPaymentReference("");await load();}
+  else{
+   const emailResponse=await fetch("/api/admin/invoices/notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceId:paymentInvoice.id,event:"payment",amount})});
+   const emailResult=await emailResponse.json();
+   setNotice("Paiement enregistré. Le statut de la facture est recalculé automatiquement."+(emailResult.emailSent>0?" Reçu envoyé par e-mail.":" E-mail non envoyé."));
+   setPaymentInvoice(null);setPaymentAmount("");setPaymentReference("");await load();
+  }
   setSaving(false);
  }
 
