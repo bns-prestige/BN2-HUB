@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database as SupabaseDatabase } from "@/lib/supabase/database.types";
 import {
   ChevronRight, Copy, Database, FileText, Globe, Plus, Save, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
 } from "lucide-react";
@@ -210,7 +210,7 @@ type CrudField = {
  name:string; label:string; type:"text"|"date"|"datetime-local"|"number"|"textarea"|"select"|"checkbox";
  required?:boolean; defaultValue?:string|number|boolean; options?:Array<{value:string;label:string}>; placeholder?:string;
 };
-type PublicTable = keyof Database["public"]["Tables"];
+type PublicTable = keyof SupabaseDatabase["public"]["Tables"];
 function LiveModuleSection({active}:{active:string}) {
  const [rows,setRows]=useState<ModuleRecord[]>([]);
  const [organizations,setOrganizations]=useState<Array<{id:string;name:string}>>([]);
