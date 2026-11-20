@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Bot, Building2, Check, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, Cloud, FileText, HardDrive, LayoutDashboard,
-  LifeBuoy, Monitor, Palette, Plus, Settings2, ShieldCheck, Sparkles,
+  LifeBuoy, Monitor, Palette, Settings2, ShieldCheck, Sparkles,
   Users, WandSparkles,
 } from "lucide-react";
 
@@ -76,10 +76,10 @@ export default function ClientBuilderPage() {
 
         <div className="builder-layout">
           <section className="builder-config">
-            <div className="builder-section-title"><div className="builder-section-icon"><Building2 size={18}/></div><div><h2>Identité de l'entreprise</h2><p>Ces informations servent à personnaliser le portail.</p></div></div>
+            <div className="builder-section-title"><div className="builder-section-icon"><Building2 size={18}/></div><div><h2>Identité de l&apos;entreprise</h2><p>Ces informations servent à personnaliser le portail.</p></div></div>
             <div className="builder-fields">
-              <label>Nom de l'entreprise<input value={company} onChange={(event) => {setCompany(event.target.value); setPrepared(false);}} placeholder="Ex. : Atelier Nova"/></label>
-              <label>Secteur d'activité<div className="builder-select-wrap"><select value={sector} onChange={(event) => {setSector(event.target.value); setPrepared(false);}}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select><ChevronDown size={15}/></div></label>
+              <label>Nom de l&apos;entreprise<input value={company} onChange={(event) => {setCompany(event.target.value); setPrepared(false);}} placeholder="Ex. : Atelier Nova"/></label>
+              <label>Secteur d&apos;activité<div className="builder-select-wrap"><select value={sector} onChange={(event) => {setSector(event.target.value); setPrepared(false);}}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select><ChevronDown size={15}/></div></label>
               <label className="builder-full-field">Contexte et besoins<textarea value={description} onChange={(event) => {setDescription(event.target.value); setPrepared(false);}} rows={3} placeholder="Décrivez les besoins de l'entreprise..."/></label>
             </div>
 
@@ -132,7 +132,7 @@ export default function ClientBuilderPage() {
               <div><span>Modules activés</span><strong>{selectedModules.length} / {moduleOptions.length}</strong></div>
               <div><span>Thème</span><strong>{selectedPalette.label}</strong></div>
             </div>
-            {prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Proposition prête à vérifier</strong><p>L'aperçu a été actualisé. Aucune publication ni création de compte n'a été effectuée.</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
+            {prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Proposition prête à vérifier</strong><p>L&apos;aperçu a été actualisé. Aucune publication ni création de compte n'a été effectuée.</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
           </aside>
         </div>
         <footer className="builder-footer"><span>BN2 HUB STUDIO <b>•</b> BN2 Consulting</span><span>CONFIGURATION NON PUBLIÉE</span></footer>
