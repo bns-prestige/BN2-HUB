@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   Check, ChevronRight, CircleAlert, Clock3, Cloud, Database, FileText, Globe, LifeBuoy, MessageSquare, Monitor, Plus, Power, Search, Send, ShieldCheck, Sparkles, UserRound, Users,
@@ -135,35 +136,72 @@ const queueSeed: QueueTicket[] = [
 ];
 const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 function SupportQueue() {
- const [tickets,setTickets]=useState(queueSeed);
+ const [tickets,setTickets]=useState<QueueTicket[]>([]);
  const [filter,setFilter]=useState("Toutes");
  const [search,setSearch]=useState("");
- const [selected,setSelected]=useState(queueSeed[0].id);
- const [assignee,setAssignee]=useState("Non attribuée");
- const [note,setNote]=useState("");
- const [notes,setNotes]=useState<string[]>([]);
- const current=tickets.find((ticket)=>ticket.id===selected) ?? tickets[0];
- const visible=tickets.filter((ticket)=>(filter==="Toutes"||ticket.status===filter)&&[ticket.id,ticket.title,ticket.client,ticket.category].join(" ").toLowerCase().includes(search.toLowerCase()));
- const updateStatus=(status:QueueStatus)=>setTickets(items=>items.map(ticket=>ticket.id===selected?{...ticket,status}:ticket));
- const updateAssignee=(value:string)=>{setAssignee(value);setTickets(items=>items.map(ticket=>ticket.id===selected?{...ticket,assignee:value}:ticket));};
- const addNote=()=>{if(!note.trim())return;setNotes(items=>[note.trim(),...items]);setNote("");};
+ const [selected,setSelected]=useState("");
+ const [loading,setLoading]=useState(true);
+ const [message,setMessage]=useState("");
+ const [messages,setMessages]=useState<string[]>([]);
+ const [saving,setSaving]=useState(false);
+ const current=tickets.find(ticket=>ticket.recordId===selected);
+ const visible=tickets.filter(ticket=>(filter==="Toutes"||ticket.status===filter)&&[ticket.id,ticket.title,ticket.client,ticket.category].join(" ").toLowerCase().includes(search.toLowerCase()));
+
+ useEffect(()=>{
+  async function load(){
+   const supabase=createClient();
+   const {data,error}=await supabase.from("support_tickets").select("id,ticket_number,organization_id,title,description,category,priority,status,created_at,assigned_to,organizations(name)").order("created_at",{ascending:false});
+   if(!error){
+    const statusMap:Record<string,QueueStatus>={new:"Nouvelle",in_progress:"En cours",waiting_customer:"En attente du client",waiting_bn2:"À vérifier",resolved:"Résolue",closed:"Fermée"};
+    const priorityMap:Record<string,QueueTicket["priority"]>={low:"Basse",normal:"Normale",high:"Haute",urgent:"Haute"};
+    const rows=(data??[]).map((row:any)=>({recordId:row.id,organizationId:row.organization_id,id:row.ticket_number,title:row.title,client:Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client",category:row.category,priority:priorityMap[row.priority]??"Normale",status:statusMap[row.status]??"Nouvelle",assignee:row.assigned_to??"",date:new Date(row.created_at).toLocaleString("fr-BE",{dateStyle:"short",timeStyle:"short"}),description:row.description}));
+    setTickets(rows); if(rows[0]) setSelected(rows[0].recordId);
+   }
+   setLoading(false);
+  }
+  void load();
+ },[]);
+
+ useEffect(()=>{
+  if(!current)return;
+  createClient().from("ticket_messages").select("body,created_at,is_internal").eq("ticket_id",current.recordId).order("created_at",{ascending:true}).then(({data})=>setMessages((data??[]).map((item:any)=>item.body)));
+ },[selected,current?.recordId]);
+
+ async function updateStatus(status:QueueStatus){
+  if(!current)return;setSaving(true);
+  const value:Record<QueueStatus,string>={"Nouvelle":"new","À vérifier":"waiting_bn2","En cours":"in_progress","En attente du client":"waiting_customer","Résolue":"resolved","Fermée":"closed"};
+  const {error}=await createClient().from("support_tickets").update({status:value[status],resolved_at:status==="Résolue"||status==="Fermée"?new Date().toISOString():null}).eq("id",current.recordId);
+  if(!error)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,status}:item));
+  setSaving(false);
+ }
+ async function assignToMe(){
+  if(!current)return;setSaving(true);
+  const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
+  if(user){const {error}=await supabase.from("support_tickets").update({assigned_to:user.id,status:"in_progress"}).eq("id",current.recordId);if(!error)setTickets(items=>items.map(item=>item.recordId===current.recordId?{...item,assignee:user.id,status:"En cours"}:item));}
+  setSaving(false);
+ }
+ async function addNote(){
+  if(!current||!message.trim())return;setSaving(true);
+  const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
+  if(user){const {error}=await supabase.from("ticket_messages").insert({ticket_id:current.recordId,organization_id:current.organizationId,sender_id:user.id,body:message.trim(),is_internal:true});if(!error){setMessages(items=>[...items,message.trim()]);setMessage("");}}
+  setSaving(false);
+ }
  return <div className="admin-content support-queue-page">
-  <div className="page-heading"><div><div className="page-eyebrow">CENTRE DE SERVICES IT <span>•</span> FILE DE TRAVAIL</div><h1>Demandes support</h1><p>Centralisez les demandes de vos clients et pilotez leur résolution par votre équipe.</p></div><span className="section-demo-label">APERÇU INTERACTIF · NON CONNECTÉ</span></div>
-  <div className="queue-kpis"><article><small>À traiter</small><strong>{tickets.filter(t=>t.status==="Nouvelle"||t.status==="À vérifier").length.toString().padStart(2,"0")}</strong><span>Nouvelle ou à vérifier</span></article><article><small>En cours</small><strong>{tickets.filter(t=>t.status==="En cours").length.toString().padStart(2,"0")}</strong><span>Prises en charge</span></article><article><small>En attente client</small><strong>{tickets.filter(t=>t.status==="En attente du client").length.toString().padStart(2,"0")}</strong><span>Informations requises</span></article><article><small>Résolues</small><strong>{tickets.filter(t=>t.status==="Résolue").length.toString().padStart(2,"0")}</strong><span>Demandes clôturées</span></article></div>
+  <div className="page-heading"><div><div className="page-eyebrow">CENTRE DE SERVICES IT <span>•</span> FILE DE TRAVAIL</div><h1>Demandes support</h1><p>Les demandes réelles enregistrées dans Supabase.</p></div><span className="section-demo-label">DONNÉES EN DIRECT</span></div>
+  <div className="queue-kpis"><article><small>À traiter</small><strong>{tickets.filter(t=>t.status==="Nouvelle"||t.status==="À vérifier").length.toString().padStart(2,"0")}</strong><span>Nouvelle ou à vérifier</span></article><article><small>En cours</small><strong>{tickets.filter(t=>t.status==="En cours").length.toString().padStart(2,"0")}</strong><span>Prises en charge</span></article><article><small>En attente client</small><strong>{tickets.filter(t=>t.status==="En attente du client").length.toString().padStart(2,"0")}</strong><span>Informations requises</span></article><article><small>Résolues</small><strong>{tickets.filter(t=>t.status==="Résolue").length.toString().padStart(2,"0")}</strong><span>Demandes terminées</span></article></div>
   <div className="queue-layout">
    <section className="admin-panel queue-list-panel">
     <div className="queue-list-head"><div><h3>File des demandes</h3><p>{visible.length} demande(s) affichée(s)</p></div><div className="queue-search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher..."/></div></div>
     <div className="queue-filters"><button className={filter==="Toutes"?"active":""} onClick={()=>setFilter("Toutes")}>Toutes</button>{queueStatuses.map(status=><button key={status} className={filter===status?"active":""} onClick={()=>setFilter(status)}>{status}</button>)}</div>
-    <div className="queue-ticket-list">{visible.map(ticket=><button key={ticket.id} className={selected===ticket.id?"selected":""} onClick={()=>{setSelected(ticket.id);setAssignee(ticket.assignee);}}><span className={`queue-priority-dot ${ticket.priority.toLowerCase()}`}/><span className="queue-ticket-copy"><strong>{ticket.title}</strong><small>{ticket.id} · {ticket.client}</small><span><i className={`queue-status-dot ${ticket.status==="Résolue"?"done":ticket.status==="En cours"?"working":ticket.status==="Nouvelle"?"new":""}`}/>{ticket.status} <b>·</b> {ticket.date}</span></span><ChevronRight size={15}/></button>)}{visible.length===0&&<div className="queue-empty">Aucune demande pour ce filtre.</div>}</div>
+    <div className="queue-ticket-list">{visible.map(ticket=><button key={ticket.recordId} className={selected===ticket.recordId?"selected":""} onClick={()=>setSelected(ticket.recordId)}><span className={"queue-priority-dot "+ticket.priority.toLowerCase()}/><span className="queue-ticket-copy"><strong>{ticket.title}</strong><small>{ticket.id} · {ticket.client}</small><span><i className={"queue-status-dot "+(ticket.status==="Résolue"?"done":ticket.status==="En cours"?"working":ticket.status==="Nouvelle"?"new":"")}/>{ticket.status} <b>·</b> {ticket.date}</span></span><ChevronRight size={15}/></button>)}{loading&&<div className="queue-empty">Chargement des demandes...</div>}{!loading&&visible.length===0&&<div className="queue-empty">Aucune demande enregistrée pour le moment.</div>}</div>
    </section>
    {current&&<section className="admin-panel queue-detail-panel">
-    <div className="queue-detail-top"><span className="queue-ref">{current.id}</span><span className={`ticket-status queue-status-${current.status.toLowerCase().replaceAll(" ","-")}`}>{current.status}</span></div>
-    <h2>{current.title}</h2><div className="queue-meta">{current.client}<b>·</b>{current.category}<b>·</b><span className={`priority priority-${current.priority.toLowerCase()}`}>{current.priority}</span></div>
-    <div className="queue-detail-block"><small>DESCRIPTION DU CLIENT</small><p>{current.description}</p></div>
-    <div className="queue-field"><label htmlFor="queue-status">Statut de la demande</label><select id="queue-status" value={current.status} onChange={e=>updateStatus(e.target.value as QueueStatus)}>{queueStatuses.map(status=><option key={status}>{status}</option>)}</select></div>
-    <div className="queue-field"><label htmlFor="queue-assignee">Technicien responsable</label><select id="queue-assignee" value={assignee} onChange={e=>updateAssignee(e.target.value)}><option>Non attribuée</option><option>Nadir Saâdi</option><option>Yanis Martin</option><option>Sarah Benali</option></select></div>
-    <div className="queue-conversation"><div className="queue-conversation-head"><h3><MessageSquare size={15}/> Notes internes</h3><span>{notes.length} note(s)</span></div>{notes.map((item,index)=><div className="queue-note" key={index}><strong>Administrateur BN2</strong><p>{item}</p></div>)}<textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Ajouter une note interne..." rows={3}/><button className="admin-primary-button" onClick={addNote} disabled={!note.trim()}><Send size={14}/> Ajouter une note</button></div>
-    <div className="queue-detail-foot"><span><UserRound size={14}/> {current.assignee}</span><span><Clock3 size={14}/> {current.date}</span></div>
+    <div className="queue-detail-top"><span className="queue-ref">{current.id}</span><span className={"ticket-status queue-status-"+current.status.toLowerCase().replaceAll(" ","-")}>{current.status}</span></div>
+    <h2>{current.title}</h2><div className="queue-meta">{current.client}<b>·</b>{current.category}<b>·</b>{current.priority}</div>
+    <div className="queue-description"><p>{current.description}</p></div>
+    <label className="queue-field-label">Statut<select value={current.status} disabled={saving} onChange={e=>void updateStatus(e.target.value as QueueStatus)}>{queueStatuses.map(status=><option key={status}>{status}</option>)}</select></label>
+    <button className="admin-primary-button" disabled={saving} onClick={()=>void assignToMe()}><UserRound size={15}/> M&apos;attribuer cette demande</button>
+    <div className="queue-notes"><h3>Notes internes</h3>{messages.map((item,index)=><p key={index}>{item}</p>)}<textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Ajouter une note interne..." rows={3}/><button disabled={saving||!message.trim()} onClick={()=>void addNote()}><Send size={14}/> Ajouter la note</button></div>
    </section>}
   </div>
  </div>;
