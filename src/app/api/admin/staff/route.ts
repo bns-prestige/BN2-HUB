@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBn2Email } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 const permissionKeys = ["tickets.read","tickets.manage","interventions.read","interventions.manage","clients.read","contracts.read","assets.read","assets.manage","documents.read","documents.manage","worklogs.read","worklogs.create"] as const;
@@ -88,7 +89,19 @@ export async function POST(request:Request) {
   },{onConflict:"user_id"}).select("id").single();
   if(staffError)return NextResponse.json({error:"La fiche employé n'a pas pu être enregistrée : "+staffError.message},{status:500});
   await admin.from("audit_logs").insert({actor_id:access.user.id,action:"staff_invited",entity_type:"staff_member",entity_id:member.id,details:{email,department,job_title:jobTitle}});
-  return NextResponse.json({staffId:member.id,inviteLink,delivery:"manual_link"},{status:201});
+  let delivery="manual_link";
+  let emailError:string|undefined;
+  if(inviteLink){
+    const siteUrl=(process.env.NEXT_PUBLIC_SITE_URL??"https://bn-2-hub.vercel.app").replace(/\/$/,"");
+    const emailResult=await sendBn2Email({
+      to:[email],subject:"Votre accès à l'équipe BN2 Consulting",
+      html:"<div style='font-family:Arial,sans-serif;color:#17253b;max-width:560px;margin:auto;padding:28px'><strong style='color:#1768d2;letter-spacing:2px'>BN2 CONSULTING</strong><h1>Bienvenue dans l'équipe</h1><p>Bonjour "+fullName.replace(/[&<>]/g,"")+" ,</p><p>Votre espace de travail BN2 HUB est prêt. Activez votre compte et choisissez un mot de passe sécurisé.</p><p><a href='"+inviteLink+"' style='display:inline-block;background:#1768d2;color:white;text-decoration:none;padding:13px 20px;border-radius:8px'>Activer mon compte</a></p><p style='font-size:12px;color:#718097'>Si le bouton ne fonctionne pas, ouvrez : "+inviteLink+"</p><p style='font-size:11px;color:#8996a8'>"+siteUrl+"</p></div>",
+      text:"Bonjour "+fullName+", votre accès BN2 HUB est prêt : "+inviteLink,
+    });
+    if(emailResult.sent){delivery="email_sent";inviteLink="";}
+    else emailError=emailResult.error??"Le service e-mail n'est pas encore configuré.";
+  }
+  return NextResponse.json({staffId:member.id,inviteLink,delivery,emailError},{status:201});
 }
 
 export async function PATCH(request:Request) {
