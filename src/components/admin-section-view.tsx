@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import {
-  ArrowUpRight, CalendarClock, CheckCircle2, ChevronRight, CircleAlert,
-  Clock3, FileText, Plus, Search, ShieldCheck, Sparkles, Users,
+  ChevronRight, CircleAlert, Clock3, FileText, Plus, ShieldCheck, Sparkles, Users,
 } from "lucide-react";
 
 type Row = { cells: string[]; status?: string; priority?: string };
