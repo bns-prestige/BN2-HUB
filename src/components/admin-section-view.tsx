@@ -11,7 +11,19 @@ type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du cli
 type QueueTicket = { recordId:string; organizationId:string; id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
 type TicketDbRecord = { id:string; ticket_number:string; organization_id:string; title:string; description:string; category:string; priority:string; status:string; created_at:string; assigned_to:string|null; organizations:{name?:string}|{name?:string}[]|null };
 type OrganizationRecord = { id:string; name:string; slug:string; sector:string|null; description:string|null; contact_email:string|null; status:string; created_at:string; enabled_modules:unknown };
-type ModuleRecord = { id?:string; title?:string; status?:string; scheduled_start?:string|null; location?:string|null; organizations?:{name?:string}|{name?:string}[]|null; name?:string; plan_name?:string|null; included_hours?:number|null; asset_tag?:string|null; category?:string; mime_type?:string|null; created_at?:string; full_name?:string; email?:string|null; is_active?:boolean; contact_email?:string|null; sector?:string|null };
+type ModuleRecord = {
+ id?:string; title?:string; description?:string|null; status?:string; scheduled_start?:string|null; scheduled_end?:string|null;
+ location?:string|null; organizations?:{name?:string}|{name?:string}[]|null; organization_id?:string;
+ assigned_to?:string|null; name?:string; plan_name?:string|null; contract_number?:string|null;
+ starts_on?:string|null; ends_on?:string|null; included_hours?:number|null; hourly_rate?:number|null;
+ monthly_price?:number|null; billing_frequency?:string; auto_renew?:boolean; renewal_notice_days?:number;
+ support_sla_hours?:number|null; asset_tag?:string|null; category?:string; manufacturer?:string|null; model?:string|null;
+ serial_number?:string|null; purchased_on?:string|null; warranty_until?:string|null; hostname?:string|null;
+ operating_system?:string|null; ip_address?:string|null; mac_address?:string|null; purchase_cost?:number|null;
+ license_expires_on?:string|null; notes?:string|null; storage_path?:string; mime_type?:string|null;
+ size_bytes?:number|null; created_at?:string; full_name?:string; email?:string|null; is_active?:boolean;
+ contact_email?:string|null; sector?:string|null;
+};
 function moduleOrganizationName(row:ModuleRecord){return Array.isArray(row.organizations)?row.organizations[0]?.name??"Client":row.organizations?.name??"Client";}
 const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
 
@@ -194,41 +206,247 @@ function ClientPortalControl() {
  </div>;
 }
 
+type CrudField = {
+ name:string; label:string; type:"text"|"date"|"datetime-local"|"number"|"textarea"|"select"|"checkbox";
+ required?:boolean; defaultValue?:string|number|boolean; options?:Array<{value:string;label:string}>; placeholder?:string;
+};
+type PublicTable = keyof Database["public"]["Tables"];
 function LiveModuleSection({active}:{active:string}) {
  const [rows,setRows]=useState<ModuleRecord[]>([]);
+ const [organizations,setOrganizations]=useState<Array<{id:string;name:string}>>([]);
+ const [staffOptions,setStaffOptions]=useState<Array<{id:string;name:string}>>([]);
  const [loading,setLoading]=useState(true);
+ const [saving,setSaving]=useState(false);
  const [error,setError]=useState("");
- type PublicTable = keyof Database["public"]["Tables"];
- const config=useMemo<Record<string,{table:PublicTable;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[]}>>(()=>({
-  "Interventions":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Interventions",columns:["Intervention","Client","Date prévue","Lieu","Statut"],map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status??"—"]},
-  "Calendrier":{table:"interventions",select:"id,title,status,scheduled_start,location,organizations(name)",title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Lieu","Statut"],map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.location??"—",r.status??"—"]},
-  "Contrats & heures":{table:"service_contracts",select:"id,name,plan_name,status,starts_on,ends_on,included_hours,organizations(name)",title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","État"],map:r=>[r.name??"—",moduleOrganizationName(r),r.plan_name??"—",String(r.included_hours??0)+" h",r.status??"—"]},
-  "Parc informatique":{table:"assets",select:"id,asset_tag,name,category,status,manufacturer,model,organizations(name)",title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","État"],map:r=>[r.asset_tag??"—",r.name??"—",moduleOrganizationName(r),r.category??"—",r.status??"—"]},
-  "Documents":{table:"documents",select:"id,name,category,mime_type,created_at,organizations(name)",title:"Documents partagés",columns:["Document","Client","Catégorie","Type","Ajouté le"],map:r=>[r.name??"—",moduleOrganizationName(r),r.category??"—",r.mime_type??"—",r.created_at?new Date(r.created_at).toLocaleDateString("fr-BE"):"—"]},
-  "Équipe BN2":{table:"profiles",select:"id,full_name,email,is_active,created_at",title:"Comptes utilisateurs",columns:["Utilisateur","E-mail","Accès","Créé le"],map:r=>[r.full_name||"Utilisateur",r.email??"—",r.is_active?"Actif":"Désactivé",r.created_at?new Date(r.created_at).toLocaleDateString("fr-BE"):"—"]},
+ const [notice,setNotice]=useState("");
+ const [formOpen,setFormOpen]=useState(false);
+ const [editingId,setEditingId]=useState("");
+ const [formValues,setFormValues]=useState<Record<string,string|boolean>>({});
+ const [documentFile,setDocumentFile]=useState<File|null>(null);
+
+ const config=useMemo<Record<string,{table:PublicTable;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[];fields?:CrudField[]}>>(()=>({
+  "Interventions":{
+   table:"interventions",select:"id,organization_id,title,description,assigned_to,scheduled_start,scheduled_end,status,location,organizations(name)",
+   title:"Interventions",columns:["Intervention","Client","Date prévue","Technicien","Lieu","Statut"],
+   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",staffOptions.find(x=>x.id===r.assigned_to)?.name??"Non attribué",r.location??"—",r.status??"—"],
+   fields:[
+    {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
+    {name:"title",label:"Objet de l'intervention",type:"text",required:true},
+    {name:"description",label:"Description",type:"textarea"},
+    {name:"assigned_to",label:"Technicien responsable",type:"select"},
+    {name:"scheduled_start",label:"Début prévu",type:"datetime-local"},
+    {name:"scheduled_end",label:"Fin prévue",type:"datetime-local"},
+    {name:"location",label:"Lieu",type:"text"},
+    {name:"status",label:"Statut",type:"select",defaultValue:"planned",options:[{value:"planned",label:"Planifiée"},{value:"confirmed",label:"Confirmée"},{value:"in_progress",label:"En cours"},{value:"completed",label:"Terminée"},{value:"cancelled",label:"Annulée"}]},
+   ],
+  },
+  "Calendrier":{
+   table:"interventions",select:"id,organization_id,title,description,assigned_to,scheduled_start,scheduled_end,status,location,organizations(name)",
+   title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Technicien","Lieu","Statut"],
+   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",staffOptions.find(x=>x.id===r.assigned_to)?.name??"Non attribué",r.location??"—",r.status??"—"],
+   fields:[
+    {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
+    {name:"title",label:"Objet",type:"text",required:true},
+    {name:"description",label:"Description",type:"textarea"},
+    {name:"assigned_to",label:"Technicien",type:"select"},
+    {name:"scheduled_start",label:"Début",type:"datetime-local"},
+    {name:"scheduled_end",label:"Fin",type:"datetime-local"},
+    {name:"location",label:"Lieu",type:"text"},
+    {name:"status",label:"Statut",type:"select",defaultValue:"planned",options:[{value:"planned",label:"Planifiée"},{value:"confirmed",label:"Confirmée"},{value:"in_progress",label:"En cours"},{value:"completed",label:"Terminée"},{value:"cancelled",label:"Annulée"}]},
+   ],
+  },
+  "Contrats & heures":{
+   table:"service_contracts",select:"id,organization_id,name,contract_number,plan_name,status,starts_on,ends_on,included_hours,hourly_rate,monthly_price,billing_frequency,auto_renew,renewal_notice_days,support_sla_hours,organizations(name)",
+   title:"Contrats de service",columns:["Contrat","Client","Formule","Heures incluses","Prix mensuel","État"],
+   map:r=>[r.contract_number||r.name||"—",moduleOrganizationName(r),r.plan_name??"—",String(r.included_hours??0)+" h",r.monthly_price==null?"—":Number(r.monthly_price).toLocaleString("fr-BE",{style:"currency",currency:"EUR"}),r.status??"—"],
+   fields:[
+    {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
+    {name:"name",label:"Nom du contrat",type:"text",required:true},
+    {name:"contract_number",label:"Référence du contrat",type:"text"},
+    {name:"plan_name",label:"Formule",type:"text"},
+    {name:"starts_on",label:"Date de début",type:"date"},
+    {name:"ends_on",label:"Date de fin",type:"date"},
+    {name:"included_hours",label:"Heures incluses",type:"number",defaultValue:0},
+    {name:"hourly_rate",label:"Tarif horaire (€)",type:"number"},
+    {name:"monthly_price",label:"Prix mensuel (€)",type:"number"},
+    {name:"billing_frequency",label:"Fréquence de facturation",type:"select",defaultValue:"monthly",options:[{value:"monthly",label:"Mensuelle"},{value:"quarterly",label:"Trimestrielle"},{value:"yearly",label:"Annuelle"},{value:"one_time",label:"Unique"},{value:"custom",label:"Personnalisée"}]},
+    {name:"status",label:"État",type:"select",defaultValue:"active",options:[{value:"draft",label:"Brouillon"},{value:"active",label:"Actif"},{value:"expired",label:"Expiré"},{value:"cancelled",label:"Résilié"}]},
+    {name:"auto_renew",label:"Renouvellement automatique",type:"checkbox",defaultValue:false},
+    {name:"renewal_notice_days",label:"Préavis de renouvellement (jours)",type:"number",defaultValue:30},
+    {name:"support_sla_hours",label:"Délai SLA (heures)",type:"number"},
+   ],
+  },
+  "Parc informatique":{
+   table:"assets",select:"id,organization_id,asset_tag,name,category,status,manufacturer,model,serial_number,assigned_to,purchased_on,warranty_until,hostname,operating_system,ip_address,mac_address,purchase_cost,license_expires_on,notes,organizations(name)",
+   title:"Équipements",columns:["Référence","Équipement","Client","Catégorie","Attribué à","État"],
+   map:r=>[r.asset_tag??"—",r.name??"—",moduleOrganizationName(r),r.category??"—",staffOptions.find(x=>x.id===r.assigned_to)?.name??"—",r.status??"—"],
+   fields:[
+    {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
+    {name:"asset_tag",label:"Référence interne",type:"text"},
+    {name:"name",label:"Nom de l'équipement",type:"text",required:true},
+    {name:"category",label:"Catégorie",type:"select",defaultValue:"other",options:[{value:"computer",label:"Ordinateur"},{value:"laptop",label:"Portable"},{value:"server",label:"Serveur"},{value:"network",label:"Réseau"},{value:"printer",label:"Imprimante"},{value:"phone",label:"Téléphone"},{value:"other",label:"Autre"}]},
+    {name:"manufacturer",label:"Fabricant",type:"text"},
+    {name:"model",label:"Modèle",type:"text"},
+    {name:"serial_number",label:"Numéro de série",type:"text"},
+    {name:"assigned_to",label:"Utilisateur / responsable",type:"select"},
+    {name:"status",label:"État",type:"select",defaultValue:"operational",options:[{value:"operational",label:"Opérationnel"},{value:"maintenance",label:"En maintenance"},{value:"retired",label:"Retiré"},{value:"lost",label:"Perdu"}]},
+    {name:"purchased_on",label:"Date d'achat",type:"date"},
+    {name:"warranty_until",label:"Fin de garantie",type:"date"},
+    {name:"hostname",label:"Nom réseau",type:"text"},
+    {name:"operating_system",label:"Système d'exploitation",type:"text"},
+    {name:"ip_address",label:"Adresse IP",type:"text"},
+    {name:"mac_address",label:"Adresse MAC",type:"text"},
+    {name:"purchase_cost",label:"Coût d'achat (€)",type:"number"},
+    {name:"license_expires_on",label:"Expiration licence",type:"date"},
+    {name:"notes",label:"Notes",type:"textarea"},
+   ],
+  },
+  "Documents":{
+   table:"documents",select:"id,organization_id,name,storage_path,mime_type,size_bytes,category,created_at,organizations(name)",
+   title:"Documents partagés",columns:["Document","Client","Catégorie","Type","Ajouté le"],
+   map:r=>[r.name??"—",moduleOrganizationName(r),r.category??"—",r.mime_type??"—",r.created_at?new Date(r.created_at).toLocaleDateString("fr-BE"):"—"],
+   fields:[
+    {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
+    {name:"category",label:"Catégorie",type:"select",defaultValue:"other",options:[{value:"contract",label:"Contrat"},{value:"invoice",label:"Facture"},{value:"report",label:"Rapport"},{value:"technical",label:"Technique"},{value:"other",label:"Autre"}]},
+   ],
+  },
   "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name??"—",r.contact_email??"—",r.sector??"—",r.status??"—"]},
- }),[]);
+ }),[staffOptions]);
  const current=config[active];
- useEffect(()=>{
+
+ const loadRows=useCallback(async()=>{
   if(!current){setRows([]);setLoading(false);return;}
   setLoading(true);setError("");
-  createClient().from(current.table).select(current.select).order("created_at",{ascending:false}).limit(100)
-   .then(({data,error})=>{if(error)setError(error.message);else setRows((data??[]) as ModuleRecord[]);setLoading(false);});
+  const {data,error}=await createClient().from(current.table).select(current.select).order("created_at",{ascending:false}).limit(100);
+  if(error)setError(error.message);else setRows((data??[]) as ModuleRecord[]);
+  setLoading(false);
  },[current]);
+ useEffect(()=>{void loadRows();},[loadRows]);
+
+ useEffect(()=>{
+  if(!current?.fields?.some(field=>field.name==="organization_id"))return;
+  async function loadOptions(){
+   const supabase=createClient();
+   const [orgResult,staffResult]=await Promise.all([
+    supabase.from("organizations").select("id,name").order("name"),
+    supabase.from("staff_members").select("user_id").in("employment_status",["invited","active"]),
+   ]);
+   setOrganizations(orgResult.data??[]);
+   const ids=(staffResult.data??[]).map(item=>item.user_id);
+   if(ids.length){
+    const {data:profiles}=await supabase.from("profiles").select("id,full_name,email").in("id",ids);
+    setStaffOptions((profiles??[]).map(profile=>({id:profile.id,name:profile.full_name||profile.email||"Employé"})));
+   }else setStaffOptions([]);
+  }
+  void loadOptions();
+ },[current]);
+
+ function openNew(){
+  const values:Record<string,string|boolean>={};
+  current?.fields?.forEach(field=>{values[field.name]=field.defaultValue??(field.type==="checkbox"?false:"");});
+  if(!values.organization_id&&organizations[0])values.organization_id=organizations[0].id;
+  setFormValues(values);setEditingId("");setDocumentFile(null);setError("");setNotice("");setFormOpen(true);
+ }
+ function openEdit(row:ModuleRecord){
+  const values:Record<string,string|boolean>={};
+  current?.fields?.forEach(field=>{
+   const value=(row as Record<string,unknown>)[field.name];
+   values[field.name]=value==null?(field.type==="checkbox"?false:""):field.type==="datetime-local"&&typeof value==="string"?value.slice(0,16):typeof value==="boolean"?value:String(value);
+  });
+  setFormValues(values);setEditingId(row.id??"");setDocumentFile(null);setError("");setNotice("");setFormOpen(true);
+ }
+ function updateField(name:string,value:string|boolean){setFormValues(current=>({...current,[name]:value}));}
+
+ async function saveRecord(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();if(!current)return;
+  setSaving(true);setError("");setNotice("");
+  const supabase=createClient();
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user){setError("Votre session a expiré.");setSaving(false);return;}
+  const payload:Record<string,unknown>={};
+  current.fields?.forEach(field=>{
+   const value=formValues[field.name];
+   if(field.type==="checkbox")payload[field.name]=value===true;
+   else if(field.type==="number")payload[field.name]=value===""?null:Number(value);
+   else payload[field.name]=value===""?null:value;
+  });
+  if(current.table==="documents"){
+   if(!documentFile){setError("Sélectionnez un fichier à déposer.");setSaving(false);return;}
+   if(documentFile.size>20*1024*1024){setError("Le fichier dépasse la limite de 20 Mo.");setSaving(false);return;}
+   const allowed=["application/pdf","image/png","image/jpeg","text/plain","text/csv","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
+   if(!allowed.includes(documentFile.type)){setError("Format non autorisé. Utilisez PDF, PNG, JPEG, TXT, CSV, DOCX ou XLSX.");setSaving(false);return;}
+   const organizationId=String(payload.organization_id??"");
+   if(!organizationId){setError("Sélectionnez une entreprise cliente.");setSaving(false);return;}
+   const safeName=documentFile.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+   const path=organizationId+"/"+crypto.randomUUID()+"-"+safeName;
+   const {error:uploadError}=await supabase.storage.from("bn2-private").upload(path,documentFile,{upsert:false,contentType:documentFile.type});
+   if(uploadError){setError(uploadError.message);setSaving(false);return;}
+   const {error:insertError}=await supabase.from("documents").insert({
+    organization_id:organizationId,uploaded_by:user.id,name:documentFile.name,storage_path:path,
+    mime_type:documentFile.type,size_bytes:documentFile.size,category:String(payload.category??"other"),
+   });
+   if(insertError){await supabase.storage.from("bn2-private").remove([path]);setError(insertError.message);setSaving(false);return;}
+  }else{
+   payload.updated_at=new Date().toISOString();
+   if(current.table==="interventions"&&!editingId)payload.created_by=user.id;
+   const result=editingId
+    ? await supabase.from(current.table).update(payload).eq("id",editingId)
+    : await supabase.from(current.table).insert(payload);
+   if(result.error){setError(result.error.message);setSaving(false);return;}
+  }
+  setNotice(editingId?"Enregistrement mis à jour.":"Enregistrement créé.");
+  setFormOpen(false);setEditingId("");setDocumentFile(null);
+  await loadRows();setSaving(false);
+ }
+
+ async function deleteRecord(row:ModuleRecord){
+  if(!current||!row.id||!window.confirm("Confirmer la suppression de cet enregistrement ?"))return;
+  const supabase=createClient();
+  if(current.table==="documents"&&row.storage_path){
+   const {error:storageError}=await supabase.storage.from("bn2-private").remove([row.storage_path]);
+   if(storageError){setError(storageError.message);return;}
+  }
+  const {error:deleteError}=await supabase.from(current.table).delete().eq("id",row.id);
+  if(deleteError)setError(deleteError.message);else{setNotice("Enregistrement supprimé.");await loadRows();}
+ }
+
+ async function downloadDocument(row:ModuleRecord){
+  if(!row.storage_path)return;
+  const {data,error}=await createClient().storage.from("bn2-private").createSignedUrl(row.storage_path,120);
+  if(error){setError(error.message);return;}
+  if(data?.signedUrl)window.open(data.signedUrl,"_blank","noopener,noreferrer");
+ }
+
  if(active==="Paramètres")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">BN2 HUB ADMIN · CONFIGURATION</div><h1>Paramètres</h1><p>Les contrôles de sécurité et de gestion de la plateforme.</p></div></div><div className="admin-settings-grid">{settings.map(item=>{const Icon=item.icon;return <article className="admin-panel settings-card" key={item.title}><span className="settings-card-icon"><Icon size={19}/></span><span className="settings-card-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><button type="button" disabled>Configuration à venir <ChevronRight size={14}/></button></article>;})}</div></div>;
  if(active==="Hébergement")return <div className="admin-content admin-section-content"><div className="page-heading"><div><div className="page-eyebrow">PLATEFORME · INFRASTRUCTURE</div><h1>Hébergement</h1><p>Services techniques utilisés par BN2 HUB.</p></div><span className="section-demo-label">CONFIGURATION ACTUELLE</span></div><section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>Infrastructure</h3><p>État de configuration, pas une mesure de disponibilité.</p></div></div><div className="section-info-grid"><div className="section-info-card"><Database size={18}/><div><strong>Supabase · région EU West</strong><p>Base PostgreSQL 17, Auth et stockage privé BN2.</p></div></div><div className="section-info-card"><Globe size={18}/><div><strong>Vercel · Next.js</strong><p>Application hébergée sur le projet bn-2-hub.</p></div></div><div className="section-info-card"><ShieldCheck size={18}/><div><strong>Isolation multi-tenant</strong><p>RLS activée sur les tables métier et documents privés.</p></div></div></div></section></div>;
  if(!current)return <div className="admin-content"><div className="page-heading"><h1>{active}</h1><p>Module non configuré.</p></div></div>;
+
  return <div className="admin-content admin-section-content">
-  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{current.title} enregistrés dans Supabase.</p></div><span className="section-demo-label">DONNÉES EN DIRECT</span></div>
+  <div className="page-heading"><div><div className="page-eyebrow">BN2 HUB <span>•</span> ESPACE ADMINISTRATEUR</div><h1>{active}</h1><p>{current.title} enregistrés dans Supabase.</p></div>
+   {current.fields&&<button className="admin-primary-button" onClick={openNew}><Plus size={15}/>{current.table==="documents"?"Ajouter un document":"Créer"}</button>}
+  </div>
+  {notice&&<p className="client-notice">{notice}</p>}
   <div className="section-metrics"><article className="admin-panel section-metric"><span>Enregistrements</span><strong>{rows.length}</strong><small>Résultats accessibles à votre compte</small></article></div>
   <section className="admin-panel section-table-panel"><div className="panel-heading"><div><h3>{current.title}</h3><p>{loading?"Chargement des données...":error?"Erreur de chargement":"Données réelles de votre espace BN2."}</p></div><span className="section-record-count">{rows.length} éléments</span></div>
    {error&&<p role="alert" className="client-notice">{error}</p>}
    {!loading&&!error&&rows.length===0&&<div className="queue-empty">Aucun enregistrement pour le moment.</div>}
-   {rows.length>0&&<div className="table-wrap"><table className="requests-table section-data-table"><thead><tr>{current.columns.map(col=><th key={col}>{col.toUpperCase()}</th>)}</tr></thead><tbody>{rows.map((row,index)=><tr key={row.id??index}>{current.map(row).map((cell,index)=><td key={index}>{index===0?<strong>{cell}</strong>:cell}</td>)}</tr>)}</tbody></table></div>}
+   {rows.length>0&&<div className="table-wrap"><table className="requests-table section-data-table"><thead><tr>{current.columns.map(col=><th key={col}>{col.toUpperCase()}</th>)}<th>ACTIONS</th></tr></thead><tbody>{rows.map((row,index)=><tr key={row.id??index}>{current.map(row).map((cell,index)=><td key={index}>{index===0?<strong>{cell}</strong>:cell}</td>)}<td><div className="bn2-crud-actions">{current.table==="documents"&&<button onClick={()=>void downloadDocument(row)}>Télécharger</button>}{current.table!=="documents"&&current.fields&&<button onClick={()=>openEdit(row)}>Modifier</button>}<button className="danger" onClick={()=>void deleteRecord(row)}>Supprimer</button></div></td></tr>)}</tbody></table></div>}
   </section>
+  {formOpen&&<div className="modal-backdrop" onClick={()=>setFormOpen(false)}><form className="bn2-crud-modal" onSubmit={saveRecord} onClick={event=>event.stopPropagation()}>
+   <div className="bn2-crud-modal-head"><div><h2>{current.table==="documents"?"Déposer un document":editingId?"Modifier l'enregistrement":"Créer un enregistrement"}</h2><p>{current.title}</p></div><button type="button" onClick={()=>setFormOpen(false)}>×</button></div>
+   <div className="bn2-crud-fields">{current.fields?.map(field=>{
+    const value=formValues[field.name]??(field.type==="checkbox"?false:"");
+    const options=field.name==="organization_id"?organizations.map(org=>({value:org.id,label:org.name})):field.name==="assigned_to"?staffOptions.map(staff=>({value:staff.id,label:staff.name})):field.options??[];
+    if(field.type==="textarea")return <label className="wide" key={field.name}>{field.label}<textarea required={field.required} value={String(value)} onChange={event=>updateField(field.name,event.target.value)} placeholder={field.placeholder}/></label>;
+    if(field.type==="select")return <label key={field.name}>{field.label}<select required={field.required} value={String(value)} onChange={event=>updateField(field.name,event.target.value)}><option value="">Sélectionner...</option>{options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
+    if(field.type==="checkbox")return <label className="checkbox-field" key={field.name}><input type="checkbox" checked={value===true} onChange={event=>updateField(field.name,event.target.checked)}/>{field.label}</label>;
+    return <label key={field.name}>{field.label}<input type={field.type} required={field.required} min={field.type==="number"?"0":undefined} step={field.type==="number"?"0.01":undefined} value={String(value)} onChange={event=>updateField(field.name,event.target.value)} placeholder={field.placeholder}/></label>;
+   })}</div>
+   {current.table==="documents"&&<label className="bn2-crud-file">Fichier à déposer<input type="file" required accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx" onChange={event=>setDocumentFile(event.target.files?.[0]??null)}/><small>PDF, PNG, JPEG, TXT, CSV, DOCX ou XLSX · 20 Mo maximum</small></label>}
+   <div className="bn2-crud-modal-footer"><button type="button" className="secondary" onClick={()=>setFormOpen(false)}>Annuler</button><button type="submit" disabled={saving}><Save size={14}/>{saving?"Enregistrement...":current.table==="documents"?"Déposer le document":editingId?"Enregistrer":"Créer"}</button></div>
+  </form></div>}
  </div>;
 }
-
 
 type StaffRecord = {
  id:string; user_id:string; employee_number:string|null; department:string; job_title:string;
