@@ -6,14 +6,14 @@ import Link from "next/link";
 import { ArrowLeft, BookOpen, Bot, Check, CircleAlert, FileText,  Plus, Save, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import "./ai-admin.css";
 
-type Settings = { enabled:boolean; model_slug:string; system_instructions:string; tone:string; temperature:number; max_output_tokens:number; require_human_approval:boolean };
+type Settings = { enabled:boolean; model_slug:string; system_instructions:string; tone:string; temperature:number; max_output_tokens:number };
 type Knowledge = { id:string; organization_id:string|null; title:string; content:string; source_type:string; status:string; tags:string[]; version:number; updated_at:string; published_at:string|null };
 type Organization = { id:string; name:string };
 
 const defaults:Settings = {
   enabled:true, model_slug:"vmc/bn2-assistant",
   system_instructions:"Tu es BN2 Assistant, l’assistant informatique de BN2 Consulting. Réponds de façon claire, utile et professionnelle. N’invente jamais les informations propres à BN2 ou à un client. Si une information manque, indique-le et propose de transmettre la question à l’équipe.",
-  tone:"Professionnel, clair, humain", temperature:0.3, max_output_tokens:1200, require_human_approval:true,
+  tone:"Professionnel, clair, humain", temperature:0.3, max_output_tokens:1200,
 };
 
 export default function AiAdminPage() {
@@ -42,7 +42,7 @@ export default function AiAdminPage() {
     if(!["bn2_owner","bn2_admin"].includes(String(user.app_metadata?.role??""))){window.location.assign("/portal");return;}
     setUserId(user.id);
     const [settingsResult,knowledgeResult,orgResult]=await Promise.all([
-      supabase.from("ai_assistant_settings").select("enabled,model_slug,system_instructions,tone,temperature,max_output_tokens,require_human_approval").eq("id",true).single(),
+      supabase.from("ai_assistant_settings").select("enabled,model_slug,system_instructions,tone,temperature,max_output_tokens").eq("id",true).single(),
       supabase.from("ai_knowledge_sources").select("id,organization_id,title,content,source_type,status,tags,version,updated_at,published_at").order("updated_at",{ascending:false}),
       supabase.from("organizations").select("id,name").order("name"),
     ]);
@@ -126,7 +126,7 @@ export default function AiAdminPage() {
             <label className="bn2-ai-check"><input type="checkbox" checked={settings.require_human_approval} onChange={e=>setSettings(v=>({...v,require_human_approval:e.target.checked}))}/> Les actions sensibles doivent être validées par un membre BN2.</label>
             <div className="bn2-ai-form-footer"><span>Les changements sont historisés à chaque publication.</span><button type="submit" disabled={saving}><Save size={15}/>{saving?"Publication...":"Enregistrer et publier"}</button></div>
           </section>
-          <aside className="bn2-ai-panel bn2-ai-side-note"><div className="bn2-ai-side-icon"><ShieldCheck size={19}/></div><h3>Vous gardez le contrôle.</h3><p>L&apos;assistant utilise les connaissances générales pour les questions informatiques. Pour les informations spécifiques à BN2 et à chaque entreprise, il s&apos;appuie uniquement sur les sources publiées et les données autorisées.</p><div className="bn2-ai-note-row"><Check size={15}/> Sources de connaissance isolées par client</div><div className="bn2-ai-note-row"><Check size={15}/> Instructions contrôlées par BN2</div><div className="bn2-ai-note-row"><Check size={15}/> Historique des versions de prompt</div><div className="bn2-ai-note-row"><Check size={15}/> Aucune action sensible sans validation</div><div className="bn2-ai-disclaimer"><strong>À savoir</strong><span>Ajouter des documents à la base de connaissances améliore les réponses par recherche contextuelle (RAG). Cela n&apos;entraîne pas les poids du modèle.</span></div></aside>
+          <aside className="bn2-ai-panel bn2-ai-side-note"><div className="bn2-ai-side-icon"><ShieldCheck size={19}/></div><h3>Vous gardez le contrôle.</h3><p>L&apos;assistant utilise les connaissances générales pour les questions informatiques. Pour les informations spécifiques à BN2 et à chaque entreprise, il s&apos;appuie uniquement sur les sources publiées et les données autorisées.</p><div className="bn2-ai-note-row"><Check size={15}/> Sources de connaissance isolées par client</div><div className="bn2-ai-note-row"><Check size={15}/> Instructions contrôlées par BN2</div><div className="bn2-ai-note-row"><Check size={15}/> Historique des versions de prompt</div><div className="bn2-ai-note-row"><Check size={15}/> Aucune action externe n'est exécutée sans autorisation</div><div className="bn2-ai-disclaimer"><strong>À savoir</strong><span>Ajouter des documents à la base de connaissances améliore les réponses par recherche contextuelle (RAG). Cela n&apos;entraîne pas les poids du modèle.</span></div></aside>
         </form>:
         <div className="bn2-ai-knowledge-grid">
           <section className="bn2-ai-panel bn2-ai-source-list"><div className="bn2-ai-panel-heading"><div><span className="bn2-ai-panel-icon"><BookOpen size={17}/></span><div><h2>Sources de connaissance</h2><p>Procédures, FAQ, offres et informations vérifiées.</p></div></div><button className="bn2-ai-add" onClick={resetSource}><Plus size={15}/> Ajouter</button></div>
