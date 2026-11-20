@@ -1,50 +1,106 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  Activity, ArrowDownRight, ArrowUpRight, Bell, BriefcaseBusiness, Building2,
+  CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3,
+  FileText, HardDrive, LayoutDashboard, LifeBuoy, Menu, Plus, Search, Settings2,
+  ShieldCheck, Users, X,
+} from "lucide-react";
+
+const navigation = [
+  { label: "Vue d'ensemble", icon: LayoutDashboard, section: "PRINCIPAL" },
+  { label: "Demandes support", icon: LifeBuoy, count: "8" },
+  { label: "Clients", icon: Building2 },
+  { label: "Interventions", icon: BriefcaseBusiness },
+  { label: "Contrats & heures", icon: FileText },
+  { label: "Parc informatique", icon: HardDrive, section: "GESTION" },
+  { label: "Calendrier", icon: CalendarDays },
+  { label: "Équipe BN2", icon: Users },
+  { label: "Documents", icon: FileText },
+  { label: "Paramètres", icon: Settings2, section: "CONFIGURATION" },
+];
+
 const tickets = [
-  { id: "BN2-2026-0042", title: "Accès à la boîte mail partagée", category: "Microsoft 365 · Aujourd'hui, 09:42", status: "Nouvelle", tone: "new" },
-  { id: "BN2-2026-0041", title: "Configuration du nouvel ordinateur", category: "Matériel · Hier, 16:18", status: "En cours", tone: "progress" },
-  { id: "BN2-2026-0039", title: "Problème de connexion VPN", category: "Réseau · 18 nov. 2026", status: "Résolue", tone: "done" },
+  { id: "BN2-2026-0042", subject: "Accès à la boîte mail partagée", client: "Atelier Nova", type: "Microsoft 365", priority: "Haute", status: "Nouvelle", time: "09:42" },
+  { id: "BN2-2026-0041", subject: "Configuration du nouvel ordinateur", client: "Groupe Horizon", type: "Matériel", priority: "Normale", status: "En cours", time: "Hier" },
+  { id: "BN2-2026-0040", subject: "Ajout d'un utilisateur", client: "Cabinet Dewael", type: "Comptes & accès", priority: "Normale", status: "À vérifier", time: "Hier" },
+  { id: "BN2-2026-0039", subject: "Problème de connexion VPN", client: "Atelier Nova", type: "Réseau", priority: "Basse", status: "Résolue", time: "18 nov." },
 ];
-const activities = [
-  { icon: "＋", title: "Nouvelle demande reçue", detail: "Accès à la boîte mail partagée", time: "Il y a 18 min" },
-  { icon: "✓", title: "Intervention clôturée", detail: "Mise à jour du poste de travail", time: "Hier, 15:32" },
-  { icon: "↗", title: "Contrat mis à jour", detail: "Renouvellement enregistré", time: "18 nov. 2026" },
+
+const clients = [
+  { name: "Atelier Nova", initials: "AN", plan: "Support essentiel", tickets: 3, color: "lavender" },
+  { name: "Groupe Horizon", initials: "GH", plan: "Gestion informatique", tickets: 2, color: "mint" },
+  { name: "Cabinet Dewael", initials: "CD", plan: "Support essentiel", tickets: 1, color: "peach" },
 ];
-export default function Home() {
+
+export default function AdminHome() {
+  const [active, setActive] = useState("Vue d'ensemble");
+  const [query, setQuery] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNewTicket, setShowNewTicket] = useState(false);
+  const filteredTickets = useMemo(() => tickets.filter((ticket) =>
+    [ticket.id, ticket.subject, ticket.client, ticket.type].join(" ").toLowerCase().includes(query.toLowerCase())
+  ), [query]);
+
   return (
-    <main className="hub-shell">
-      <aside className="sidebar">
-        <div className="brand"><div className="brand-mark">BN2</div><div><div className="brand-name">BN2 HUB</div><div className="brand-sub">L'espace de gestion</div></div></div>
-        <div><div className="nav-label">ESPACE DE TRAVAIL</div><nav className="nav-list" aria-label="Navigation principale">
-          <a className="nav-item active" href="#overview"><span className="nav-icon">▦</span>Vue d'ensemble</a>
-          <a className="nav-item" href="#requests"><span className="nav-icon">◷</span>Demandes support</a>
-          <a className="nav-item" href="#interventions"><span className="nav-icon">⌘</span>Interventions</a>
-          <a className="nav-item" href="#assets"><span className="nav-icon">▤</span>Parc informatique</a>
-          <a className="nav-item" href="#documents"><span className="nav-icon">▧</span>Documents</a>
-          <a className="nav-item" href="#contracts"><span className="nav-icon">◫</span>Contrat & heures</a>
-        </nav></div>
+    <main className="admin-shell">
+      <aside className={`admin-sidebar ${mobileOpen ? "mobile-open" : ""}`}>
+        <div className="admin-brand">
+          <div className="admin-brand-mark">BN2</div>
+          <div><div className="admin-brand-name">BN2 <span>HUB</span></div><div className="admin-brand-caption">CONSULTING PLATFORM</div></div>
+          <button className="mobile-close" onClick={() => setMobileOpen(false)} aria-label="Fermer le menu"><X size={18}/></button>
+        </div>
+        <div className="workspace-switch"><div className="workspace-symbol"><ShieldCheck size={17}/></div><div className="workspace-copy"><strong>BN2 Consulting</strong><span>Espace administrateur</span></div><ChevronDown size={15}/></div>
+        <nav className="admin-nav" aria-label="Navigation administrateur">
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            return <div key={item.label}>
+              {item.section && <div className="admin-nav-section">{item.section}</div>}
+              <button className={`admin-nav-item ${active === item.label ? "selected" : ""}`} onClick={() => {setActive(item.label); setMobileOpen(false);}}>
+                <Icon size={17} strokeWidth={1.8}/><span>{item.label}</span>{item.count && <span className="nav-count">{item.count}</span>}
+              </button>
+            </div>;
+          })}
+        </nav>
         <div className="sidebar-bottom">
-          <div className="help-card"><strong>Besoin d'assistance ?</strong><p>Notre équipe est là pour vous accompagner dans vos demandes informatiques.</p><a className="help-link" href="mailto:support@bn2consulting.be">Contacter BN2 ↗</a></div>
-          <div className="profile-mini"><div className="avatar">AD</div><div><div className="profile-name">Administrateur démo</div><div className="profile-role">Espace client · Démonstration</div></div></div>
+          <div className="sidebar-help"><div className="help-icon"><CircleHelp size={17}/></div><strong>Besoin d'un coup de main ?</strong><p>Retrouvez les informations utiles pour gérer votre plateforme.</p><button onClick={() => setActive("Centre d'aide")}>Centre d'aide <ChevronRight size={14}/></button></div>
+          <div className="admin-user"><div className="user-avatar">NS</div><div className="user-info"><strong>Administrateur BN2</strong><span>Accès propriétaire</span></div><button aria-label="Options du compte"><ChevronDown size={15}/></button></div>
         </div>
       </aside>
-      <section className="main" id="overview">
-        <header className="topbar"><div className="breadcrumb">BN2 HUB <span> / </span> <strong>Vue d'ensemble</strong></div><div className="top-actions"><button className="icon-button" aria-label="Notifications">♧</button><div className="top-avatar">AD</div></div></header>
-        <section className="welcome"><div><div className="eyebrow">ESPACE CLIENT · DÉMONSTRATION</div><h1>Bonjour, bienvenue 👋</h1><p className="subtitle">Voici le résumé de l'activité de votre espace informatique.</p></div><button className="primary-button">＋ Créer une demande</button></section>
-        <section className="metrics" aria-label="Indicateurs de démonstration">
-          <article className="metric"><div className="metric-top"><span>Demandes ouvertes</span><span className="metric-icon">◷</span></div><div className="metric-value">08</div><div className="metric-foot">2 demandes prioritaires</div></article>
-          <article className="metric"><div className="metric-top"><span>Interventions ce mois</span><span className="metric-icon">⌘</span></div><div className="metric-value">12</div><div className="metric-foot">Sur site et à distance</div></article>
-          <article className="metric"><div className="metric-top"><span>Heures disponibles</span><span className="metric-icon">◴</span></div><div className="metric-value">06h 30</div><div className="metric-foot">Sur votre forfait actuel</div></article>
-          <article className="metric"><div className="metric-top"><span>Équipements suivis</span><span className="metric-icon">▣</span></div><div className="metric-value">24</div><div className="metric-foot">Postes et périphériques</div></article>
-        </section>
-        <section className="content-grid">
-          <article className="panel" id="requests"><div className="panel-head"><h2 className="panel-title">Demandes récentes</h2><a className="panel-action" href="#requests">Voir toutes les demandes ↗</a></div><div className="ticket-list">
-            {tickets.map((ticket) => <div className="ticket" key={ticket.id}><div><div className="ticket-title">{ticket.title}</div><div className="ticket-meta">{ticket.id} · {ticket.category}</div></div><span className={`status ${ticket.tone}`}>{ticket.status}</span></div>)}
-          </div></article>
-          <article className="panel"><div className="panel-head"><h2 className="panel-title">Activité récente</h2><a className="panel-action" href="#overview">Historique ↗</a></div><div className="activity">
-            {activities.map((item) => <div className="activity-item" key={item.title}><div className="activity-dot">{item.icon}</div><div><div className="activity-copy"><strong>{item.title}</strong><br />{item.detail}</div><div className="activity-time">{item.time}</div></div></div>)}
-          </div><div className="notice"><strong>Interface de démonstration</strong><p>Les chiffres, demandes et activités affichés sont fictifs. La connexion à Supabase et les fonctionnalités métier seront ajoutées dans les prochaines étapes.</p></div></article>
-        </section>
-        <div className="footer-note">BN2 HUB · Une solution BN2 Consulting</div>
+
+      <section className="admin-main">
+        <header className="admin-topbar">
+          <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu size={20}/></button><div className="admin-breadcrumb">BN2 HUB <ChevronRight size={14}/><strong>{active}</strong></div></div>
+          <div className="topbar-right">
+            <div className="global-search"><Search size={16}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher une demande..." aria-label="Rechercher une demande"/><kbd>⌘ K</kbd></div>
+            <div className="notification-wrap"><button className="top-icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={18}/><i/></button>{showNotifications && <div className="notification-popover"><strong>Notifications</strong><p><span className="notification-dot"/> 2 nouvelles demandes attendent une vérification.</p><p><span className="notification-dot muted"/> Votre aperçu BN2 HUB est prêt.</p></div>}</div>
+            <div className="top-user-avatar">NS</div>
+          </div>
+        </header>
+
+        {active === "Vue d'ensemble" ? <div className="admin-content">
+          <div className="page-heading"><div><div className="page-eyebrow">MERCREDI 20 NOVEMBRE 2026 <span>•</span> ESPACE ADMINISTRATEUR</div><h1>Vue d'ensemble</h1><p>Gardez une vue claire sur l'activité de BN2 Consulting.</p></div><button className="admin-primary-button" onClick={() => setShowNewTicket(true)}><Plus size={17}/> Nouvelle demande</button></div>
+          <div className="overview-banner"><div className="banner-orb orb-one"/><div className="banner-orb orb-two"/><div className="banner-copy"><div className="banner-tag"><span/> VOTRE ESPACE DE PILOTAGE</div><h2>Bonjour, bienvenue dans BN2 HUB.</h2><p>Votre activité informatique, vos clients et vos interventions réunis au même endroit.</p></div><div className="banner-art"><div className="banner-art-card"><div className="art-card-top"><span/><span/><span/></div><div className="art-lines"><i/><i/><i/></div><div className="art-check"><CheckCircle2 size={20}/></div></div></div></div>
+          <div className="section-heading"><div><h2>Votre activité</h2><p>Les indicateurs clés de votre espace de gestion.</p></div><button className="period-select">30 derniers jours <ChevronDown size={14}/></button></div>
+          <div className="admin-metrics">
+            <article className="admin-metric"><div className="metric-label">Clients actifs <span className="metric-symbol purple"><Building2 size={17}/></span></div><div className="metric-number">12</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +2</span> ce mois-ci</div><div className="metric-spark spark-purple"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Demandes ouvertes <span className="metric-symbol amber"><LifeBuoy size={17}/></span></div><div className="metric-number">08</div><div className="metric-trend"><span className="trend-down"><ArrowDownRight size={14}/> -12%</span> vs mois dernier</div><div className="metric-spark spark-amber"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Interventions <span className="metric-symbol blue"><Activity size={17}/></span></div><div className="metric-number">24</div><div className="metric-trend"><span className="trend-up"><ArrowUpRight size={14}/> +8%</span> vs mois dernier</div><div className="metric-spark spark-blue"><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+            <article className="admin-metric"><div className="metric-label">Heures prestées <span className="metric-symbol green"><Clock3 size={17}/></span></div><div className="metric-number">36<span className="metric-unit">h</span></div><div className="metric-trend"><span className="trend-neutral">Sur 48 h</span> contractuelles</div><div className="hours-progress"><span/></div></article>
+          </div>
+          <div className="dashboard-grid">
+            <section className="admin-panel requests-panel"><div className="panel-heading"><div><h3>Demandes récentes</h3><p>Suivez les dernières demandes de vos clients.</p></div><button className="text-action" onClick={() => setActive("Demandes support")}>Toutes les demandes <ChevronRight size={14}/></button></div>
+              <div className="table-wrap"><table className="requests-table"><thead><tr><th>DEMANDE</th><th>CLIENT</th><th>PRIORITÉ</th><th>STATUT</th><th>REÇUE</th></tr></thead><tbody>{filteredTickets.map((ticket) => <tr key={ticket.id}><td><strong>{ticket.subject}</strong><span>{ticket.id} · {ticket.type}</span></td><td>{ticket.client}</td><td><span className={`priority priority-${ticket.priority.toLowerCase()}`}><i/>{ticket.priority}</span></td><td><span className={`ticket-status status-${ticket.status.toLowerCase().replaceAll(" ", "-")}`}>{ticket.status}</span></td><td className="received-time">{ticket.time}</td></tr>)}</tbody></table>{filteredTickets.length === 0 && <div className="empty-state">Aucune demande ne correspond à votre recherche.</div>}</div>
+            </section>
+            <section className="admin-panel clients-panel"><div className="panel-heading"><div><h3>Vos clients</h3><p>Vue rapide de votre portefeuille.</p></div><button className="round-action" aria-label="Voir les clients" onClick={() => setActive("Clients")}><ChevronRight size={16}/></button></div><div className="client-list">{clients.map((client) => <button className="client-row" key={client.name} onClick={() => setActive("Clients")}><div className={`client-avatar ${client.color}`}>{client.initials}</div><div className="client-details"><strong>{client.name}</strong><span>{client.plan}</span></div><span className="client-ticket-count">{client.tickets} <small>tickets</small></span></button>)}</div><button className="clients-link" onClick={() => setActive("Clients")}>Gérer les clients <ChevronRight size={14}/></button></section>
+          </div>
+          <div className="bottom-grid"><section className="admin-panel quick-panel"><div className="panel-heading"><div><h3>Accès rapides</h3><p>Les actions les plus utilisées.</p></div></div><div className="quick-actions"><button onClick={() => setActive("Clients")}><span className="quick-icon quick-purple"><Plus size={18}/></span><span><strong>Ajouter un client</strong><small>Créer un nouvel espace client</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Calendrier")}><span className="quick-icon quick-blue"><CalendarDays size={18}/></span><span><strong>Planifier une intervention</strong><small>Organiser le travail de l'équipe</small></span><ChevronRight size={15}/></button><button onClick={() => setActive("Contrats & heures")}><span className="quick-icon quick-green"><FileText size={18}/></span><span><strong>Consulter les contrats</strong><small>Suivre les forfaits et les heures</small></span><ChevronRight size={15}/></button></div></section><section className="admin-panel activity-panel"><div className="panel-heading"><div><h3>Activité récente</h3><p>Les derniers événements de la plateforme.</p></div><button className="round-action" aria-label="Voir l'activité"><ChevronRight size={16}/></button></div><div className="activity-feed"><div className="feed-item"><span className="feed-icon feed-purple"><Plus size={14}/></span><div><strong>Nouvelle demande reçue</strong><p>Atelier Nova · Accès boîte mail</p><small>Il y a 18 minutes</small></div></div><div className="feed-item"><span className="feed-icon feed-green"><CheckCircle2 size={14}/></span><div><strong>Intervention clôturée</strong><p>Groupe Horizon · Mise à jour poste</p><small>Hier à 15:32</small></div></div></div></section></div>
+          <footer className="admin-footer"><span>BN2 HUB <b>•</b> Une solution BN2 Consulting</span><span>APERÇU ADMINISTRATEUR · DONNÉES DE DÉMONSTRATION</span></footer>
+        </div> : <div className="placeholder-page"><div className="placeholder-icon"><Settings2 size={25}/></div><div className="page-eyebrow">BN2 HUB ADMIN</div><h1>{active}</h1><p>Cette section fait partie de l'espace administrateur. Son interface et ses fonctionnalités seront développées dans la prochaine étape.</p><button className="admin-primary-button" onClick={() => setActive("Vue d'ensemble")}>Retour à la vue d'ensemble <ChevronRight size={16}/></button></div>}
       </section>
+      {showNewTicket && <div className="modal-backdrop" onClick={() => setShowNewTicket(false)}><div className="new-request-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowNewTicket(false)} aria-label="Fermer"><X size={18}/></button><div className="modal-icon"><Plus size={20}/></div><h2>Nouvelle demande</h2><p>La création de demandes sera connectée au système de support dans une prochaine étape.</p><label>Objet de la demande<input placeholder="Ex. : Configuration Microsoft 365" disabled/></label><label>Client<select disabled><option>Sélectionner un client</option></select></label><button className="admin-primary-button modal-submit" onClick={() => setShowNewTicket(false)}>Compris</button></div></div>}
     </main>
   );
 }
