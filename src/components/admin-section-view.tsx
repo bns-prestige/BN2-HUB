@@ -13,7 +13,7 @@ import {
 type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
 type QueueTicket = { recordId:string; organizationId:string; id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
 type TicketDbRecord = { id:string; ticket_number:string; organization_id:string; title:string; description:string; category:string; priority:string; status:string; created_at:string; assigned_to:string|null; organizations:{name?:string}|{name?:string}[]|null };
-type OrganizationRecord = { id:string; name:string; slug:string; sector:string|null; description:string|null; contact_email:string|null; status:string; created_at:string; enabled_modules:unknown };
+type OrganizationRecord = { id:string; name:string; slug:string; legal_name?:string|null; vat_number?:string|null; address?:string|null; phone?:string|null; website?:string|null; contact_name?:string|null; billing_email?:string|null; company_size?:string|null; sector:string|null; description:string|null; contact_email:string|null; status:string; created_at:string; enabled_modules:unknown };
 type ModuleRecord = {
  id?:string; title?:string; description?:string|null; status?:string; scheduled_start?:string|null; scheduled_end?:string|null;
  location?:string|null; organizations?:{name?:string}|{name?:string}[]|null; organization_id?:string;
@@ -119,6 +119,14 @@ function ClientPortalControl() {
  const [email,setEmail]=useState("");
  const [sector,setSector]=useState("Services professionnels");
  const [description,setDescription]=useState("");
+ const [legalName,setLegalName]=useState("");
+ const [vatNumber,setVatNumber]=useState("");
+ const [address,setAddress]=useState("");
+ const [phone,setPhone]=useState("");
+ const [website,setWebsite]=useState("");
+ const [contactName,setContactName]=useState("");
+ const [billingEmail,setBillingEmail]=useState("");
+ const [companySize,setCompanySize]=useState("small");
  const [error,setError]=useState("");
  const [saving,setSaving]=useState(false);
  const [selectedOrganizationId,setSelectedOrganizationId]=useState("");
@@ -132,7 +140,7 @@ function ClientPortalControl() {
 
  const load=useCallback(async()=>{
   setLoading(true);
-  const {data,error}=await createClient().from("organizations").select("id,name,slug,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
+  const {data,error}=await createClient().from("organizations").select("id,name,slug,legal_name,vat_number,address,phone,website,contact_name,billing_email,company_size,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
   if(error)setError(error.message);else{setClients(data??[]);setSelectedOrganizationId(current=>current||data?.[0]?.id||"");}
   setLoading(false);
  },[]);
@@ -141,8 +149,13 @@ function ClientPortalControl() {
  async function createOrganization(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setSaving(true);
   const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  const {data,error}=await createClient().from("organizations").insert({name:name.trim(),slug,sector,description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding"}).select("id").single();
-  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");setSelectedOrganizationId(data.id);await load();}
+  const {data,error}=await createClient().from("organizations").insert({
+   name:name.trim(),slug,legal_name:legalName.trim()||null,vat_number:vatNumber.trim()||null,address:address.trim()||null,
+   phone:phone.trim()||null,website:website.trim()||null,contact_name:contactName.trim()||null,
+   billing_email:billingEmail.trim()||email.trim()||null,company_size:companySize,sector,
+   description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding",
+  }).select("id").single();
+  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");setLegalName("");setVatNumber("");setAddress("");setPhone("");setWebsite("");setContactName("");setBillingEmail("");setCompanySize("small");setSelectedOrganizationId(data.id);await load();}
   setSaving(false);
  }
  async function updateStatus(id:string,status:string){
@@ -184,8 +197,16 @@ function ClientPortalControl() {
    <section className="admin-panel portal-config-panel">
     <div className="portal-config-heading"><div><div className="page-eyebrow">NOUVELLE ORGANISATION</div><h2>Créer un espace client</h2><p>L&apos;organisation sera enregistrée dans la base BN2.</p></div></div>
     <form className="builder-fields" onSubmit={createOrganization}>
-     <label>Nom de l&apos;entreprise<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder="Ex. : Atelier Nova"/></label>
+     <label>Nom commercial<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder="Nom visible dans BN2 HUB"/></label>
+     <label>Raison sociale<input value={legalName} onChange={e=>setLegalName(e.target.value)} placeholder="Dénomination légale"/></label>
+     <label>Numéro de TVA<input value={vatNumber} onChange={e=>setVatNumber(e.target.value)} placeholder="BE 0XXX.XXX.XXX"/></label>
+     <label>Contact principal<input value={contactName} onChange={e=>setContactName(e.target.value)} placeholder="Nom et prénom"/></label>
      <label>E-mail de contact<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="contact@entreprise.be"/></label>
+     <label>E-mail de facturation<input type="email" value={billingEmail} onChange={e=>setBillingEmail(e.target.value)} placeholder="comptabilite@entreprise.be"/></label>
+     <label>Téléphone<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+32..."/></label>
+     <label>Site web<input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..."/></label>
+     <label className="builder-full-field">Adresse complète<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Rue, numéro, code postal, ville, pays"/></label>
+     <label>Taille de l&apos;entreprise<select value={companySize} onChange={e=>setCompanySize(e.target.value)}><option value="micro">1–9 personnes</option><option value="small">10–49 personnes</option><option value="medium">50–249 personnes</option><option value="large">250+ personnes</option><option value="other">Autre</option></select></label>
      <label>Secteur d&apos;activité<select value={sector} onChange={e=>setSector(e.target.value)}><option>Services professionnels</option><option>Commerce & distribution</option><option>Industrie</option><option>Construction</option><option>Santé</option><option>Association</option><option>Autre</option></select></label>
      <label className="builder-full-field">Description<textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Contexte et besoins de l&apos;entreprise"/></label>
      {error&&<p role="alert" className="client-notice">{error}</p>}
