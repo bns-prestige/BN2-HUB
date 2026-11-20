@@ -222,7 +222,7 @@ function LiveModuleSection({active}:{active:string}) {
  const [notice,setNotice]=useState("");
  const [formOpen,setFormOpen]=useState(false);
  const [editingId,setEditingId]=useState("");
- const [formValues,setFormValues]=useState<Record<string,string|boolean>>({});
+ const [formValues,setFormValues]=useState<Record<string,string|number|boolean>>({});
  const [documentFile,setDocumentFile]=useState<File|null>(null);
 
  const config=useMemo<Record<string,{table:PublicTable;select:string;title:string;columns:string[];map:(row:ModuleRecord)=>string[];fields?:CrudField[]}>>(()=>({
@@ -343,7 +343,7 @@ function LiveModuleSection({active}:{active:string}) {
  },[current]);
 
  function openNew(){
-  const values:Record<string,string|boolean>={};
+  const values:Record<string,string|number|boolean>={};
   current?.fields?.forEach(field=>{values[field.name]=field.defaultValue??(field.type==="checkbox"?false:"");});
   if(!values.organization_id&&organizations[0])values.organization_id=organizations[0].id;
   setFormValues(values);setEditingId("");setDocumentFile(null);setError("");setNotice("");setFormOpen(true);
