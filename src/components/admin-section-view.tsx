@@ -161,7 +161,7 @@ function ClientPortalControl() {
    const result=await response.json();
    if(!response.ok)throw new Error(result.error??"Invitation impossible.");
    setInvitationUrl(result.actionLink??"");
-   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d&apos;invitation généré. Copiez-le et envoyez-le au client.");
+   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d'invitation généré. Copiez-le et envoyez-le au client.");
    setMemberEmail("");setMemberName("");
   }catch(cause){setInviteError(cause instanceof Error?cause.message:"Invitation impossible.");}
   finally{setInviting(false);}
@@ -244,7 +244,7 @@ function LiveModuleSection({active}:{active:string}) {
   "Calendrier":{
    table:"interventions",select:"id,organization_id,title,description,assigned_to,scheduled_start,scheduled_end,status,location,organizations(name)",
    title:"Calendrier des interventions",columns:["Événement","Client","Date prévue","Technicien","Lieu","Statut"],
-   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",staffOptions.find(x=>x.id===r.assigned_to)?.name??"Non attribué",r.location??"—",r.status??"—"],
+   map:r=>[r.title??"—",moduleOrganizationName(r),r.scheduled_start?new Date(r.scheduled_start).toLocaleString("fr-BE"):"Non planifiée",r.assigned_to??"Non attribué",r.location??"—",r.status??"—"],
    fields:[
     {name:"organization_id",label:"Entreprise cliente",type:"select",required:true},
     {name:"title",label:"Objet",type:"text",required:true},
