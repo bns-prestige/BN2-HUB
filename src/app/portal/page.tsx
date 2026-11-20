@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight, Bell, BookOpen, Bot, CheckCircle2, ChevronDown, ChevronRight, Clock3,
-  FileText, HelpCircle, Home, LifeBuoy, LogOut, Menu, Monitor, Network,
+  FileText, FolderOpen, HelpCircle, Home, LifeBuoy, LogOut, Menu, Monitor, Network, Receipt,
   Plus, Search, Send, ShieldCheck, Smartphone, Wifi, X,
 } from "lucide-react";
 
@@ -111,6 +111,34 @@ export default function ClientPortalPage() {
     void loadPortal();
   }, []);
 
+  useEffect(()=>{
+    if(!selectedRequest?.recordId){setMessages([]);return;}
+    createClient().from("ticket_messages").select("id,body,created_at,sender_id").eq("ticket_id",selectedRequest.recordId).eq("is_internal",false).order("created_at",{ascending:true}).then(({data,error})=>{if(!error)setMessages((data??[]) as PortalMessage[]);});
+  },[selectedRequest?.recordId]);
+
+  async function sendTicketMessage(event:React.FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    if(!selectedRequest?.recordId||!newMessage.trim())return;
+    setSendingMessage(true);
+    const response=await fetch("/api/tickets/"+selectedRequest.recordId+"/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({body:newMessage.trim()})});
+    const result=await response.json();
+    if(!response.ok)setSuccess(result.error??"Impossible d'envoyer le message.");
+    else{setMessages(current=>[...current,result.message as PortalMessage]);setNewMessage("");setSuccess("Votre message a été envoyé à BN2.");}
+    setSendingMessage(false);
+  }
+
+  async function downloadDocument(document:PortalDocument){
+    const {data,error}=await createClient().storage.from("bn2-private").createSignedUrl(document.storage_path,120);
+    if(error){setSuccess(error.message);return;}
+    if(data?.signedUrl)window.open(data.signedUrl,"_blank","noopener,noreferrer");
+  }
+
+  async function loadInvoiceItems(invoiceId:string){
+    setSelectedInvoice(invoiceId);
+    const {data,error}=await createClient().from("service_invoice_items").select("id,description,quantity,unit_price,tax_rate,line_total").eq("invoice_id",invoiceId).order("created_at");
+    if(!error)setInvoiceItems((data??[]) as PortalInvoiceItem[]);
+  }
+
   async function signOut() {
     await createClient().auth.signOut();
     window.location.assign("/login");
@@ -146,6 +174,8 @@ export default function ClientPortalPage() {
     { label: "Mes demandes", icon: LifeBuoy, count: String(openCount) },
     { label: "Nouvelle demande", icon: Plus },
     { label: "Parc informatique", icon: Monitor },
+    { label: "Mes factures", icon: Receipt },
+    { label: "Documents", icon: FolderOpen },
     { label: "Guides & aide", icon: BookOpen },
     { label: "Assistant IA", icon: Bot },
   ];
