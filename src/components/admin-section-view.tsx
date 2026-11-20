@@ -160,8 +160,15 @@ function ClientPortalControl() {
    });
    const result=await response.json();
    if(!response.ok)throw new Error(result.error??"Invitation impossible.");
-   setInvitationUrl(result.actionLink??"");
-   setInviteMessage(result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d'invitation généré. Copiez-le et envoyez-le au client.");
+   const mailResponse=await fetch("/api/admin/send-invite-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:memberEmail,fullName:memberName,organization:result.organization,actionLink:result.actionLink??"",existingAccount:result.existingAccount===true})});
+   const mailResult=await mailResponse.json();
+   if(mailResponse.ok&&mailResult.sent){
+    setInvitationUrl("");
+    setInviteMessage("Invitation envoyée automatiquement à "+memberEmail+".");
+   }else{
+    setInvitationUrl(result.actionLink??"https://bn-2-hub.vercel.app/login");
+    setInviteMessage((result.existingAccount?"Compte existant ajouté à l'organisation.":"Lien d'invitation généré. Copiez-le et envoyez-le au client.")+" "+(mailResult.error??"Le service e-mail n'est pas encore configuré."));
+   }
    setMemberEmail("");setMemberName("");
   }catch(cause){setInviteError(cause instanceof Error?cause.message:"Invitation impossible.");}
   finally{setInviting(false);}
