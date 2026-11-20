@@ -37,19 +37,26 @@ export default function InvoiceManager(){
  const [paymentAmount,setPaymentAmount]=useState("");
  const [paymentMethod,setPaymentMethod]=useState("bank_transfer");
  const [paymentReference,setPaymentReference]=useState("");
+ const [defaultTaxRate,setDefaultTaxRate]=useState("21");
+ const [defaultCurrency,setDefaultCurrency]=useState("EUR");
+ const [paymentTermsDays,setPaymentTermsDays]=useState(30);
 
  const load=useCallback(async()=>{
   setLoading(true);setError("");
   const supabase=createClient();
-  const [orgResult,contractResult,invoiceResult,itemResult,paymentResult]=await Promise.all([
+  const [orgResult,contractResult,invoiceResult,itemResult,paymentResult,settingsResult]=await Promise.all([
    supabase.from("organizations").select("id,name").order("name"),
    supabase.from("service_contracts").select("id,organization_id,name,contract_number").order("created_at",{ascending:false}),
    supabase.from("service_invoices").select("id,invoice_number,organization_id,contract_id,status,currency,issue_date,due_date,subtotal,tax_total,total,notes,organizations(name)").order("created_at",{ascending:false}).limit(200),
    supabase.from("service_invoice_items").select("id,invoice_id,description,quantity,unit_price,tax_rate,line_total").order("created_at"),
    supabase.from("service_payments").select("id,invoice_id,amount,method,status,reference,paid_at").order("created_at",{ascending:false}),
+   supabase.from("platform_settings").select("value").eq("key","billing").maybeSingle(),
   ]);
-  const firstError=orgResult.error??contractResult.error??invoiceResult.error??itemResult.error??paymentResult.error;
+  const firstError=orgResult.error??contractResult.error??invoiceResult.error??itemResult.error??paymentResult.error??settingsResult.error;
   if(firstError)setError(firstError.message);
+  const billing=(settingsResult.data?.value??{}) as Record<string,unknown>;
+  const vat=Number(billing.vat_rate??21);const currency=String(billing.currency??"EUR");const terms=Number(billing.payment_terms_days??30);
+  setDefaultTaxRate(String(vat));setDefaultCurrency(currency);setPaymentTermsDays(terms);
   const invoiceRows=(invoiceResult.data??[]) as Invoice[];
   const today=new Date().toISOString().slice(0,10);
   const overdue=invoiceRows.filter(invoice=>invoice.status==="issued"&&invoice.due_date&&invoice.due_date<today).map(invoice=>invoice.id);
@@ -68,7 +75,7 @@ export default function InvoiceManager(){
   return {subtotal:acc.subtotal+base,tax:acc.tax+base*(Math.max(0,Number(line.tax_rate)||0)/100)};
  },{subtotal:0,tax:0}),[lines]);
  function updateLine(index:number,key:keyof LineDraft,value:string){setLines(current=>current.map((line,i)=>i===index?{...line,[key]:value}:line));}
- function resetCreate(){setOrganizationId("");setContractId("");setIssueDate(new Date().toISOString().slice(0,10));setDueDate(new Date(Date.now()+30*86400000).toISOString().slice(0,10));setNotes("");setLines([{...emptyLine}]);}
+ function resetCreate(){setOrganizationId("");setContractId("");setIssueDate(new Date().toISOString().slice(0,10));setDueDate(new Date(Date.now()+paymentTermsDays*86400000).toISOString().slice(0,10));setNotes("");setLines([{...emptyLine,tax_rate:defaultTaxRate}]);}
 
  async function createInvoice(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setNotice("");
@@ -79,7 +86,7 @@ export default function InvoiceManager(){
   const supabase=createClient();
   const {data:{user}}=await supabase.auth.getUser();
   const {data:invoice,error:invoiceError}=await supabase.from("service_invoices").insert({
-   organization_id:organizationId,invoice_number:"",contract_id:contractId||null,issue_date:issueDate,due_date:dueDate||null,
+   organization_id:organizationId,invoice_number:"",contract_id:contractId||null,issue_date:issueDate,due_date:dueDate||null,currency:defaultCurrency,
    notes:notes.trim()||null,created_by:user?.id??null,status:"draft",
   }).select("id,invoice_number").single();
   if(invoiceError||!invoice){setError(invoiceError?.message??"Création de la facture impossible.");setSaving(false);return;}
@@ -98,7 +105,7 @@ export default function InvoiceManager(){
   setSaving(true);setError("");
   const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();
   const {error:paymentError}=await supabase.from("service_payments").insert({
-   invoice_id:paymentInvoice.id,organization_id:paymentInvoice.organization_id,amount,currency:"EUR",
+   invoice_id:paymentInvoice.id,organization_id:paymentInvoice.organization_id,amount,currency:paymentInvoice.currency,
    method:paymentMethod,status:"succeeded",reference:paymentReference.trim()||null,paid_at:new Date().toISOString(),recorded_by:user?.id??null,
   });
   if(paymentError)setError(paymentError.message);
