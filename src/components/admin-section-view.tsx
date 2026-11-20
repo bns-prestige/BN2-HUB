@@ -414,9 +414,13 @@ function LiveModuleSection({active}:{active:string}) {
   }else{
    payload.updated_at=new Date().toISOString();
    if(current.table==="interventions"&&!editingId)payload.created_by=user.id;
+   const dynamicTable = supabase.from(current.table as never) as unknown as {
+    update:(values:Record<string,unknown>)=>{eq:(column:string,value:string)=>Promise<{error:{message:string}|null}>};
+    insert:(values:Record<string,unknown>)=>Promise<{error:{message:string}|null}>;
+   };
    const result=editingId
-    ? await supabase.from(current.table).update(payload as never).eq("id",editingId)
-    : await supabase.from(current.table).insert(payload as never);
+    ? await dynamicTable.update(payload).eq("id",editingId)
+    : await dynamicTable.insert(payload);
    if(result.error){setError(result.error.message);setSaving(false);return;}
   }
   setNotice(editingId?"Enregistrement mis à jour.":"Enregistrement créé.");
@@ -431,7 +435,8 @@ function LiveModuleSection({active}:{active:string}) {
    const {error:storageError}=await supabase.storage.from("bn2-private").remove([row.storage_path]);
    if(storageError){setError(storageError.message);return;}
   }
-  const {error:deleteError}=await supabase.from(current.table).delete().eq("id",row.id);
+  const dynamicDelete = supabase.from(current.table as never) as unknown as {delete:()=>{eq:(column:string,value:string)=>Promise<{error:{message:string}|null}>}};
+  const {error:deleteError}=await dynamicDelete.delete().eq("id",row.id);
   if(deleteError)setError(deleteError.message);else{setNotice("Enregistrement supprimé.");await loadRows();}
  }
 
