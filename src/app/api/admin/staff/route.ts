@@ -101,7 +101,7 @@ export async function PATCH(request:Request) {
   if(!id)return NextResponse.json({error:"staff_id_required"},{status:400});
   const {data:member,error:findError}=await admin.from("staff_members").select("id,user_id").eq("id",id).single();
   if(findError||!member)return NextResponse.json({error:"staff_not_found"},{status:404});
-  const update:Record<string,unknown>={updated_at:new Date().toISOString()};
+  const update:{department?:string;job_title?:string;employee_number?:string|null;employment_status?:"invited"|"active"|"on_leave"|"suspended"|"terminated";permissions?:Record<string,boolean>;started_on?:string|null;ended_on?:string|null;updated_at:string}={updated_at:new Date().toISOString()};
   if(typeof body.department==="string")update.department=body.department.trim().slice(0,100);
   if(typeof body.jobTitle==="string")update.job_title=body.jobTitle.trim().slice(0,120);
   if(typeof body.employeeNumber==="string")update.employee_number=body.employeeNumber.trim()||null;
