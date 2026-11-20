@@ -23,6 +23,5 @@ export async function POST(request:Request){
   due_at:typeof body.dueAt==="string"&&body.dueAt?body.dueAt:null,
  }).select("id,ticket_number,title,status,priority,created_at").single();
  if(error||!ticket)return NextResponse.json({error:error?.message??"ticket_create_failed"},{status:400});
- await supabase.from("audit_logs").insert({actor_id:user.id,organization_id:organizationId,action:"ticket_created",entity_type:"support_ticket",entity_id:ticket.id,details:{title:ticket.title,priority:ticket.priority}});
  return NextResponse.json({ticket},{status:201});
 }
