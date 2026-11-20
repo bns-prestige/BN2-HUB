@@ -124,6 +124,51 @@ const settings = [
   {icon:ShieldCheck,title:"Hébergement & infrastructure",text:"Domaines, stockage, sauvegardes et disponibilité",tag:"Infrastructure"},
 ];
 
+type QueueStatus = "Nouvelle" | "À vérifier" | "En cours" | "En attente du client" | "Résolue" | "Fermée";
+type QueueTicket = { id:string; title:string; client:string; category:string; priority:"Haute"|"Normale"|"Basse"; status:QueueStatus; assignee:string; date:string; description:string };
+const queueSeed: QueueTicket[] = [
+ {id:"BN2-2026-0042",title:"Accès à la boîte mail partagée",client:"Atelier Nova",category:"Microsoft 365",priority:"Haute",status:"Nouvelle",assignee:"Non attribuée",date:"Aujourd'hui · 09:42",description:"L'équipe ne parvient plus à ouvrir la boîte mail partagée info@atelier-nova.be depuis Outlook. Le problème touche deux collaborateurs."},
+ {id:"BN2-2026-0041",title:"Configuration du nouvel ordinateur",client:"Groupe Horizon",category:"Matériel",priority:"Normale",status:"En cours",assignee:"Yanis Martin",date:"Hier · 16:18",description:"Préparer le nouvel ordinateur portable et installer les applications nécessaires pour le nouveau collaborateur."},
+ {id:"BN2-2026-0040",title:"Ajout d'un utilisateur",client:"Cabinet Dewael",category:"Comptes & accès",priority:"Normale",status:"À vérifier",assignee:"Sarah Benali",date:"Hier · 11:06",description:"Créer un compte professionnel et donner accès aux dossiers partagés du cabinet."},
+ {id:"BN2-2026-0039",title:"Problème de connexion VPN",client:"Atelier Nova",category:"Réseau",priority:"Basse",status:"En attente du client",assignee:"Nadir Saâdi",date:"18 nov. · 14:20",description:"La connexion VPN se coupe après quelques minutes. Des informations complémentaires ont été demandées au client."},
+ {id:"BN2-2026-0038",title:"Mise à jour des postes",client:"Groupe Horizon",category:"Maintenance",priority:"Basse",status:"Résolue",assignee:"Yanis Martin",date:"17 nov. · 10:15",description:"Installation des mises à jour de sécurité sur les postes utilisateurs."},
+];
+const queueStatuses: QueueStatus[] = ["Nouvelle","À vérifier","En cours","En attente du client","Résolue","Fermée"];
+function SupportQueue() {
+ const [tickets,setTickets]=useState(queueSeed);
+ const [filter,setFilter]=useState("Toutes");
+ const [search,setSearch]=useState("");
+ const [selected,setSelected]=useState(queueSeed[0].id);
+ const [assignee,setAssignee]=useState("Non attribuée");
+ const [note,setNote]=useState("");
+ const [notes,setNotes]=useState<string[]>([]);
+ const current=tickets.find((ticket)=>ticket.id===selected) ?? tickets[0];
+ const visible=tickets.filter((ticket)=>(filter==="Toutes"||ticket.status===filter)&&[ticket.id,ticket.title,ticket.client,ticket.category].join(" ").toLowerCase().includes(search.toLowerCase()));
+ const updateStatus=(status:QueueStatus)=>setTickets(items=>items.map(ticket=>ticket.id===selected?{...ticket,status}:ticket));
+ const updateAssignee=(value:string)=>{setAssignee(value);setTickets(items=>items.map(ticket=>ticket.id===selected?{...ticket,assignee:value}:ticket));};
+ const addNote=()=>{if(!note.trim())return;setNotes(items=>[note.trim(),...items]);setNote("");};
+ return <div className="admin-content support-queue-page">
+  <div className="page-heading"><div><div className="page-eyebrow">CENTRE DE SERVICES IT <span>•</span> FILE DE TRAVAIL</div><h1>Demandes support</h1><p>Centralisez les demandes de vos clients et pilotez leur résolution par votre équipe.</p></div><span className="section-demo-label">APERÇU INTERACTIF · NON CONNECTÉ</span></div>
+  <div className="queue-kpis"><article><small>À traiter</small><strong>{tickets.filter(t=>t.status==="Nouvelle"||t.status==="À vérifier").length.toString().padStart(2,"0")}</strong><span>Nouvelle ou à vérifier</span></article><article><small>En cours</small><strong>{tickets.filter(t=>t.status==="En cours").length.toString().padStart(2,"0")}</strong><span>Prises en charge</span></article><article><small>En attente client</small><strong>{tickets.filter(t=>t.status==="En attente du client").length.toString().padStart(2,"0")}</strong><span>Informations requises</span></article><article><small>Résolues</small><strong>{tickets.filter(t=>t.status==="Résolue").length.toString().padStart(2,"0")}</strong><span>Demandes clôturées</span></article></div>
+  <div className="queue-layout">
+   <section className="admin-panel queue-list-panel">
+    <div className="queue-list-head"><div><h3>File des demandes</h3><p>{visible.length} demande(s) affichée(s)</p></div><div className="queue-search"><Search size={15}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher..."/></div></div>
+    <div className="queue-filters"><button className={filter==="Toutes"?"active":""} onClick={()=>setFilter("Toutes")}>Toutes</button>{queueStatuses.map(status=><button key={status} className={filter===status?"active":""} onClick={()=>setFilter(status)}>{status}</button>)}</div>
+    <div className="queue-ticket-list">{visible.map(ticket=><button key={ticket.id} className={selected===ticket.id?"selected":""} onClick={()=>{setSelected(ticket.id);setAssignee(ticket.assignee);}}><span className={`queue-priority-dot ${ticket.priority.toLowerCase()}`}/><span className="queue-ticket-copy"><strong>{ticket.title}</strong><small>{ticket.id} · {ticket.client}</small><span><i className={`queue-status-dot ${ticket.status==="Résolue"?"done":ticket.status==="En cours"?"working":ticket.status==="Nouvelle"?"new":""}`}/>{ticket.status} <b>·</b> {ticket.date}</span></span><ChevronRight size={15}/></button>)}{visible.length===0&&<div className="queue-empty">Aucune demande pour ce filtre.</div>}</div>
+   </section>
+   {current&&<section className="admin-panel queue-detail-panel">
+    <div className="queue-detail-top"><span className="queue-ref">{current.id}</span><span className={`ticket-status queue-status-${current.status.toLowerCase().replaceAll(" ","-")}`}>{current.status}</span></div>
+    <h2>{current.title}</h2><div className="queue-meta">{current.client}<b>·</b>{current.category}<b>·</b><span className={`priority priority-${current.priority.toLowerCase()}`}>{current.priority}</span></div>
+    <div className="queue-detail-block"><small>DESCRIPTION DU CLIENT</small><p>{current.description}</p></div>
+    <div className="queue-field"><label htmlFor="queue-status">Statut de la demande</label><select id="queue-status" value={current.status} onChange={e=>updateStatus(e.target.value as QueueStatus)}>{queueStatuses.map(status=><option key={status}>{status}</option>)}</select></div>
+    <div className="queue-field"><label htmlFor="queue-assignee">Technicien responsable</label><select id="queue-assignee" value={assignee} onChange={e=>updateAssignee(e.target.value)}><option>Non attribuée</option><option>Nadir Saâdi</option><option>Yanis Martin</option><option>Sarah Benali</option></select></div>
+    <div className="queue-conversation"><div className="queue-conversation-head"><h3><MessageSquare size={15}/> Notes internes</h3><span>{notes.length} note(s)</span></div>{notes.map((item,index)=><div className="queue-note" key={index}><strong>Administrateur BN2</strong><p>{item}</p></div>)}<textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Ajouter une note interne..." rows={3}/><button className="admin-primary-button" onClick={addNote} disabled={!note.trim()}><Send size={14}/> Ajouter une note</button></div>
+    <div className="queue-detail-foot"><span><UserRound size={14}/> {current.assignee}</span><span><Clock3 size={14}/> {current.date}</span></div>
+   </section>}
+  </div>
+ </div>;
+}
+
 function ClientPortalControl() {
   const [client, setClient] = useState("Atelier Nova");
   const [active, setActive] = useState(true);
@@ -167,6 +212,7 @@ function ClientPortalControl() {
 }
 
 export default function AdminSectionView({ active }: { active: string }) {
+  if (active === "Demandes support") return <SupportQueue />;
   if (active === "Portails clients") return <ClientPortalControl />;
   const data = sections[active];
   if (!data) {
