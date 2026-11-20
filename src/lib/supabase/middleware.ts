@@ -23,7 +23,8 @@ export async function updateSession(request: NextRequest) {
   const isLogin = path === "/login";
   const isPortal = path.startsWith("/portal");
   const isAiAdmin = path.startsWith("/ai-admin");
-  const isProtected = path === "/" || path.startsWith("/client-builder") || isPortal || isAiAdmin;
+  const isStaffArea = path.startsWith("/staff");
+  const isProtected = path === "/" || path.startsWith("/client-builder") || isPortal || isAiAdmin || isStaffArea;
 
   if (isProtected && !user) {
     const target = request.nextUrl.clone();
@@ -35,13 +36,17 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const role = user.app_metadata?.role;
     const isAdmin = role === "bn2_owner" || role === "bn2_admin";
+    const isStaff = role === "bn2_staff" || role === "bn2_agent";
     if (isLogin) {
-      return NextResponse.redirect(new URL(isAdmin ? "/" : "/portal", request.url));
+      return NextResponse.redirect(new URL(isAdmin ? "/" : isStaff ? "/staff" : "/portal", request.url));
     }
     if ((path === "/" || path.startsWith("/client-builder") || isAiAdmin) && !isAdmin) {
-      return NextResponse.redirect(new URL("/portal", request.url));
+      return NextResponse.redirect(new URL(isStaff ? "/staff" : "/portal", request.url));
     }
-    if (isPortal && !isAdmin) {
+    if (isStaffArea && isAdmin) return NextResponse.redirect(new URL("/", request.url));
+    if (isStaffArea && !isStaff) return NextResponse.redirect(new URL("/portal", request.url));
+    if (isPortal && isStaff && !isAdmin && path !== "/portal/assistant") return NextResponse.redirect(new URL("/staff", request.url));
+    if (isPortal && !isAdmin && !isStaff) {
       const { data: membership } = await supabase
         .from("organization_members")
         .select("id")
