@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
 // Server-only utility. Never import this module into a Client Component.
 export function createAdminClient() {
@@ -9,7 +10,7 @@ export function createAdminClient() {
     throw new Error("Configuration Supabase serveur manquante.");
   }
 
-  return createClient(url, serviceRoleKey, {
+  return createClient<Database>(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
