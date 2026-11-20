@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Bot, Building2, Check, CheckCircle2, ChevronDown,
@@ -33,11 +34,27 @@ export default function ClientBuilderPage() {
   const [palette, setPalette] = useState("blue");
   const [prepared, setPrepared] = useState(false);
   const [activePreview, setActivePreview] = useState("dashboard");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [createdId, setCreatedId] = useState("");
   const selectedPalette = palettes.find((item) => item.id === palette) ?? palettes[0];
   const selectedLabels = useMemo(
     () => moduleOptions.filter((item) => selectedModules.includes(item.id)),
     [selectedModules],
   );
+
+  async function saveConfiguration() {
+    setSaving(true); setSaveError(""); setCreatedId("");
+    const slug = company.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const { data, error } = await createClient().from("organizations").insert({
+      name: company.trim(), slug, sector, description: description.trim() || null,
+      status: "onboarding", brand_color: selectedPalette.color,
+      enabled_modules: selectedModules,
+    }).select("id").single();
+    if (error) setSaveError(error.message);
+    else { setCreatedId(data.id); setPrepared(true); setActivePreview("dashboard"); }
+    setSaving(false);
+  }
 
   function toggleModule(id: string) {
     setPrepared(false);
@@ -101,8 +118,8 @@ export default function ClientBuilderPage() {
               {palettes.map((item) => <button type="button" key={item.id} className={`builder-palette ${palette === item.id ? "chosen" : ""}`} onClick={() => {setPalette(item.id); setPrepared(false);}}><span style={{ background: item.color }}/>{item.label}{palette === item.id && <CheckCircle2 size={15}/>}</button>)}
             </div>
 
-            <div className="builder-ai-note"><span className="builder-ai-note-icon"><Bot size={19}/></span><div><strong>Assistant de configuration BN2</strong><p>Le moteur IA proposera les menus, textes et réglages à partir de ces informations. Toute proposition devra être vérifiée avant publication.</p><small><CircleHelp size={12}/> Le moteur IA et la sauvegarde Supabase restent à connecter.</small></div></div>
-            <button className="builder-generate" type="button" disabled={!company.trim() || selectedModules.length === 0} onClick={() => {setPrepared(true); setActivePreview("dashboard");}}><WandSparkles size={17}/> Préparer la proposition <ArrowRight size={16}/></button>
+            <div className="builder-ai-note"><span className="builder-ai-note-icon"><Bot size={19}/></span><div><strong>Assistant de configuration BN2</strong><p>Le moteur IA proposera les menus, textes et réglages à partir de ces informations. Toute proposition devra être vérifiée avant publication.</p><small><CircleHelp size={12}/> Les propositions sont enregistrées dans Supabase avant publication.</small></div></div>
+            <button className="builder-generate" type="button" disabled={!company.trim() || selectedModules.length === 0} onClick={() => void saveConfiguration()}>{saving ? "Enregistrement..." : <><WandSparkles size={17}/> Enregistrer la configuration</>} <ArrowRight size={16}/></button>
           </section>
 
           <aside className="builder-preview-column">
@@ -132,10 +149,10 @@ export default function ClientBuilderPage() {
               <div><span>Modules activés</span><strong>{selectedModules.length} / {moduleOptions.length}</strong></div>
               <div><span>Thème</span><strong>{selectedPalette.label}</strong></div>
             </div>
-            {prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Proposition prête à vérifier</strong><p>L&apos;aperçu a été actualisé. Aucune publication ni création de compte n&apos;a été effectuée.</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
+            {saveError && <div className="client-notice">{saveError}</div>}{prepared ? <div className="builder-prepared"><CheckCircle2 size={18}/><div><strong>Configuration enregistrée</strong><p>Organisation créée dans Supabase. Référence : {createdId}</p></div></div> : <div className="builder-review-note"><Monitor size={17}/><span>La prévisualisation se met à jour pendant la configuration. Préparez une proposition pour passer à la vérification.</span></div>}
           </aside>
         </div>
-        <footer className="builder-footer"><span>BN2 HUB STUDIO <b>•</b> BN2 Consulting</span><span>CONFIGURATION NON PUBLIÉE</span></footer>
+        <footer className="builder-footer"><span>BN2 HUB STUDIO <b>•</b> BN2 Consulting</span><span>CONFIGURATION ENREGISTRÉE DANS SUPABASE</span></footer>
       </div>
     </main>
   );
