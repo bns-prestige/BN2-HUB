@@ -351,7 +351,24 @@ function LiveModuleSection({active}:{active:string}) {
     {name:"category",label:"Catégorie",type:"select",defaultValue:"other",options:[{value:"contract",label:"Contrat"},{value:"invoice",label:"Facture"},{value:"report",label:"Rapport"},{value:"technical",label:"Technique"},{value:"other",label:"Autre"}]},
    ],
   },
-  "Clients":{table:"organizations",select:"id,name,contact_email,sector,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name??"—",r.contact_email??"—",r.sector??"—",r.status??"—"]},
+  "Clients":{
+   table:"organizations",select:"id,name,slug,legal_name,vat_number,address,phone,website,contact_name,billing_email,company_size,sector,description,contact_email,status,created_at",title:"Organisations clientes",columns:["Entreprise","Contact","Secteur","État"],map:r=>[r.name??"—",r.contact_email??"—",r.sector??"—",r.status??"—"],
+   fields:[
+    {name:"name",label:"Nom commercial",type:"text",required:true,placeholder:"Nom de l'entreprise"},
+    {name:"legal_name",label:"Raison sociale",type:"text"},
+    {name:"vat_number",label:"Numéro de TVA",type:"text"},
+    {name:"contact_name",label:"Contact principal",type:"text"},
+    {name:"contact_email",label:"E-mail de contact",type:"text",placeholder:"contact@entreprise.be"},
+    {name:"billing_email",label:"E-mail de facturation",type:"text"},
+    {name:"phone",label:"Téléphone",type:"text"},
+    {name:"website",label:"Site web",type:"text"},
+    {name:"address",label:"Adresse complète",type:"text"},
+    {name:"company_size",label:"Taille de l'entreprise",type:"select",options:[{value:"micro",label:"1–9 personnes"},{value:"small",label:"10–49 personnes"},{value:"medium",label:"50–249 personnes"},{value:"large",label:"250+ personnes"},{value:"other",label:"Autre"}]},
+    {name:"sector",label:"Secteur d'activité",type:"text"},
+    {name:"description",label:"Description",type:"textarea"},
+    {name:"status",label:"Statut",type:"select",defaultValue:"onboarding",options:[{value:"onboarding",label:"À configurer"},{value:"active",label:"Actif"},{value:"suspended",label:"Suspendu"},{value:"archived",label:"Archivé"}]},
+   ],
+  },
  }),[]);
  const current=config[active];
 
@@ -411,8 +428,12 @@ function LiveModuleSection({active}:{active:string}) {
    else if(field.type==="number")payload[field.name]=value===""?null:Number(value);
    else payload[field.name]=value===""?null:value;
   });
-  if(current.table==="documents"){
-   if(!documentFile){setError("Sélectionnez un fichier à déposer.");setSaving(false);return;}
+  if(current.table==="organizations"){
+   const response=await fetch("/api/admin/organizations",{method:editingId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(editingId?{id:editingId,values:payload}:payload)});
+   const result=await response.json();
+   if(!response.ok){setError(result.error??"Enregistrement de la société impossible.");setSaving(false);return;}
+  }else if(current.table==="documents"){
+   if(!documentFile{setError("Sélectionnez un fichier à déposer.");setSaving(false);return;}
    if(documentFile.size>20*1024*1024){setError("Le fichier dépasse la limite de 20 Mo.");setSaving(false);return;}
    const allowed=["application/pdf","image/png","image/jpeg","text/plain","text/csv","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
    if(!allowed.includes(documentFile.type)){setError("Format non autorisé. Utilisez PDF, PNG, JPEG, TXT, CSV, DOCX ou XLSX.");setSaving(false);return;}
