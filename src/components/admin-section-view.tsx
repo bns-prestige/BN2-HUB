@@ -433,7 +433,7 @@ function LiveModuleSection({active}:{active:string}) {
    const result=await response.json();
    if(!response.ok){setError(result.error??"Enregistrement de la société impossible.");setSaving(false);return;}
   }else if(current.table==="documents"){
-   if(!documentFile{setError("Sélectionnez un fichier à déposer.");setSaving(false);return;}
+   if(!documentFile){setError("Sélectionnez un fichier à déposer.");setSaving(false);return;}
    if(documentFile.size>20*1024*1024){setError("Le fichier dépasse la limite de 20 Mo.");setSaving(false);return;}
    const allowed=["application/pdf","image/png","image/jpeg","text/plain","text/csv","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
    if(!allowed.includes(documentFile.type)){setError("Format non autorisé. Utilisez PDF, PNG, JPEG, TXT, CSV, DOCX ou XLSX.");setSaving(false);return;}
