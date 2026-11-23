@@ -6,6 +6,7 @@ import type { Database as SupabaseDatabase } from "@/lib/supabase/database.types
 import InvoiceManager from "@/components/invoice-manager";
 import PlatformSettings from "@/components/platform-settings";
 import AuditLogViewer from "@/components/audit-log-viewer";
+import EmployeeTimeTracker from "@/components/employee-time-tracker";
 import {
   ChevronLeft, ChevronRight, Clock3, Copy, Database, Download, Globe, Plus, Save, Search, Send, ShieldCheck, UserRound, Users,
 } from "lucide-react";
@@ -586,7 +587,7 @@ type WorkLogRow = {
 };
 type ProfileLabel={id:string;full_name:string|null;email:string|null};
 function firstRelation<T,>(value:T|T[]|null):T|null{return Array.isArray(value)?value[0]??null:value;}
-function WorkLogsSection(){
+function LegacyWorkLogsSection(){
  const [rows,setRows]=useState<WorkLogRow[]>([]);
  const [profiles,setProfiles]=useState<Record<string,string>>({});
  const [loading,setLoading]=useState(true);
@@ -648,6 +649,8 @@ function WorkLogsSection(){
  </div>;
 }
 
+
+function WorkLogsSection(){ return <><EmployeeTimeTracker/><LegacyWorkLogsSection/></>; }
 
 type CalendarIntervention={
  id:string;title:string;description:string|null;status:string;scheduled_start:string|null;scheduled_end:string|null;location:string|null;assigned_to:string|null;
