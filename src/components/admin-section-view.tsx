@@ -150,41 +150,39 @@ function ClientPortalControl() {
 
  const load=useCallback(async()=>{
   setLoading(true);
-  const {data,error}=await createClient().from("organizations").select("id,name,slug,legal_name,vat_number,address,phone,website,contact_name,billing_email,company_size,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
-  if(error)setError(error.message);else{setClients(data??[]);setSelectedOrganizationId(current=>current||data?.[0]?.id||"");}
-  setLoading(false);
+  try{
+   const response=await fetch("/api/admin/organizations",{cache:"no-store"});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Impossible de charger les sociétés.");
+   const data=(result.organizations??[]) as OrganizationRecord[];
+   setClients(data);setSelectedOrganizationId(current=>current||data[0]?.id||"");
+  }catch(cause){setError(cause instanceof Error?cause.message:"Impossible de charger les sociétés.");}
+  finally{setLoading(false);}
  },[]);
  useEffect(()=>{void load();},[load]);
 
  async function createOrganization(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setSaving(true);
-  const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  const {data,error}=await createClient().from("organizations").insert({
-   name:name.trim(),slug,legal_name:legalName.trim()||null,vat_number:vatNumber.trim()||null,address:address.trim()||null,
-   phone:phone.trim()||null,website:website.trim()||null,contact_name:contactName.trim()||null,
-   billing_email:billingEmail.trim()||email.trim()||null,company_size:companySize,sector,
-   description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding",
-  }).select("id").single();
-  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");setLegalName("");setVatNumber("");setAddress("");setPhone("");setWebsite("");setContactName("");setBillingEmail("");setCompanySize("small");setSelectedOrganizationId(data.id);await load();}
-  setSaving(false);
+  try{
+   const response=await fetch("/api/admin/organizations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    name,legal_name:legalName,vat_number:vatNumber,address,phone,website,contact_name:contactName,billing_email:billingEmail,
+    company_size:companySize,sector,description,contact_email:email,
+   })});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Création de la société impossible.");
+   setName("");setEmail("");setDescription("");setLegalName("");setVatNumber("");setAddress("");setPhone("");setWebsite("");setContactName("");setBillingEmail("");setCompanySize("small");setSelectedOrganizationId(result.organization.id);await load();
+  }catch(cause){setError(cause instanceof Error?cause.message:"Création de la société impossible.");}
+  finally{setSaving(false);}
  }
  async function updateStatus(id:string,status:string){
-  const {error}=await createClient().from("organizations").update({status}).eq("id",id);
-  if(error)setError(error.message);else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
+  const response=await fetch("/api/admin/organizations",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,status})});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Mise à jour impossible.");else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
  }
  async function inviteMember(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setInviteError("");setInviteMessage("");setInvitationUrl("");setInviting(true);
   try{
-   const supabase=createClient();
-   const {data:{session}}=await supabase.auth.getSession();
-   if(!session)throw new Error("Session expirée. Reconnectez-vous.");
-   const apiKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-   if(!apiKey)throw new Error("Clé publique Supabase manquante.");
-   const response=await fetch("https://almzypjgccucdkwnpldy.supabase.co/functions/v1/bn2-invite-member",{
-    method:"POST",
-    headers:{Authorization:"Bearer "+session.access_token,apikey:apiKey,"Content-Type":"application/json"},
-    body:JSON.stringify({email:memberEmail,fullName:memberName,organizationId:selectedOrganizationId,memberRole}),
-   });
+   const response=await fetch("/api/admin/organization-members",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:memberEmail,fullName:memberName,organizationId:selectedOrganizationId,memberRole})});
    const result=await response.json();
    if(!response.ok)throw new Error(result.error??"Invitation impossible.");
    const mailResponse=await fetch("/api/admin/send-invite-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:memberEmail,fullName:memberName,organization:result.organization,actionLink:result.actionLink??"",existingAccount:result.existingAccount===true})});
@@ -430,16 +428,9 @@ function LiveModuleSection({active}:{active:string}) {
    });
    if(insertError){await supabase.storage.from("bn2-private").remove([path]);setError(insertError.message);setSaving(false);return;}
   }else{
-   payload.updated_at=new Date().toISOString();
-   if(current.table==="interventions"&&!editingId)payload.created_by=user.id;
-   const dynamicTable = supabase.from(current.table as never) as unknown as {
-    update:(values:Record<string,unknown>)=>{eq:(column:string,value:string)=>Promise<{error:{message:string}|null}>};
-    insert:(values:Record<string,unknown>)=>Promise<{error:{message:string}|null}>;
-   };
-   const result=editingId
-    ? await dynamicTable.update(payload).eq("id",editingId)
-    : await dynamicTable.insert(payload);
-   if(result.error){setError(result.error.message);setSaving(false);return;}
+   const response=await fetch("/api/admin/records",{method:editingId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({table:current.table,id:editingId||undefined,values:payload})});
+   const result=await response.json();
+   if(!response.ok){setError(result.error??"Enregistrement impossible.");setSaving(false);return;}
   }
   setNotice(editingId?"Enregistrement mis à jour.":"Enregistrement créé.");
   setFormOpen(false);setEditingId("");setDocumentFile(null);
@@ -540,11 +531,15 @@ function StaffManagement(){
  useEffect(()=>{void load();},[load]);
  async function invite(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setSaving(true);setError("");setNotice("");setInviteLink("");
-  const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
-  const result=await response.json();
-  if(!response.ok)setError(result.error??"Invitation impossible.");
-  else{setInviteLink(result.inviteLink??"");setNotice(result.delivery==="email_sent"?"Invitation envoyée automatiquement par e-mail.":("Fiche employé créée. Copiez le lien pour le transmettre manuellement."+((result.emailError)?" "+result.emailError:"")));setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();}
-  setSaving(false);
+  try{
+   const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Invitation impossible.");
+   setInviteLink(result.inviteLink??"");
+   setNotice(result.delivery==="email_sent"?"Invitation envoyée automatiquement par e-mail.":"Fiche employé créée. Copiez le lien pour le transmettre manuellement."+((result.emailError)?" "+result.emailError:""));
+   setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();
+  }catch(cause){setError(cause instanceof Error?cause.message:"Invitation impossible.");}
+  finally{setSaving(false);}
  }
  async function updateStatus(member:StaffRecord,status:StaffRecord["employment_status"]){
   const response=await fetch("/api/admin/staff",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:member.id,status})});

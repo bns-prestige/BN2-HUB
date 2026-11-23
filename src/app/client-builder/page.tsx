@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Bot, Building2, Check, CheckCircle2, ChevronDown,
@@ -45,15 +44,17 @@ export default function ClientBuilderPage() {
 
   async function saveConfiguration() {
     setSaving(true); setSaveError(""); setCreatedId("");
-    const slug = company.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const { data, error } = await createClient().from("organizations").insert({
-      name: company.trim(), slug, sector, description: description.trim() || null,
-      status: "onboarding", brand_color: selectedPalette.color,
-      enabled_modules: selectedModules,
-    }).select("id").single();
-    if (error) setSaveError(error.message);
-    else { setCreatedId(data.id); setPrepared(true); setActivePreview("dashboard"); }
-    setSaving(false);
+    try {
+      const response = await fetch("/api/admin/organizations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        name: company.trim(), sector, description: description.trim() || null,
+        brand_color: selectedPalette.color, enabled_modules: selectedModules,
+      }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Création de l'entreprise impossible.");
+      setCreatedId(result.organization.id); setPrepared(true); setActivePreview("dashboard");
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : "Création de l'entreprise impossible.");
+    } finally { setSaving(false); }
   }
 
   function toggleModule(id: string) {
