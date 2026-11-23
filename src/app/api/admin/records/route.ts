@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: "Type d'enregistrement non autorisé." }, { status: 400 });
   if (table === "interventions") payload.created_by = access.user.id;
   const admin = createAdminClient();
-  const { data, error } = await admin.from(table as "assets" | "service_contracts" | "interventions").insert(payload).select("id").single();
+  const { data, error } = await admin.from(table as "assets" | "service_contracts" | "interventions").insert(payload as never).select("id").single();
   if (error) return NextResponse.json({ error: "Création impossible : " + error.message }, { status: 400 });
   await admin.from("audit_logs").insert({ actor_id: access.user.id, action: table + "_created", entity_type: table, entity_id: data.id, details: { fields: Object.keys(payload) } });
   return NextResponse.json({ record: data }, { status: 201 });
@@ -51,7 +51,7 @@ export async function PATCH(request: Request) {
   if (!payload || !id) return NextResponse.json({ error: "Type ou identifiant invalide." }, { status: 400 });
   payload.updated_at = new Date().toISOString();
   const admin = createAdminClient();
-  const { error } = await admin.from(table as "assets" | "service_contracts" | "interventions").update(payload).eq("id", id);
+  const { error } = await admin.from(table as "assets" | "service_contracts" | "interventions").update(payload as never).eq("id", id);
   if (error) return NextResponse.json({ error: "Mise à jour impossible : " + error.message }, { status: 400 });
   await admin.from("audit_logs").insert({ actor_id: access.user.id, action: table + "_updated", entity_type: table, entity_id: id, details: { fields: Object.keys(payload) } });
   return NextResponse.json({ success: true });
