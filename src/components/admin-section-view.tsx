@@ -150,27 +150,34 @@ function ClientPortalControl() {
 
  const load=useCallback(async()=>{
   setLoading(true);
-  const {data,error}=await createClient().from("organizations").select("id,name,slug,legal_name,vat_number,address,phone,website,contact_name,billing_email,company_size,sector,description,contact_email,status,created_at,enabled_modules").order("created_at",{ascending:false});
-  if(error)setError(error.message);else{setClients(data??[]);setSelectedOrganizationId(current=>current||data?.[0]?.id||"");}
-  setLoading(false);
+  try{
+   const response=await fetch("/api/admin/organizations",{cache:"no-store"});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Impossible de charger les sociétés.");
+   const data=(result.organizations??[]) as OrganizationRecord[];
+   setClients(data);setSelectedOrganizationId(current=>current||data[0]?.id||"");
+  }catch(cause){setError(cause instanceof Error?cause.message:"Impossible de charger les sociétés.");}
+  finally{setLoading(false);}
  },[]);
  useEffect(()=>{void load();},[load]);
 
  async function createOrganization(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setError("");setSaving(true);
-  const slug=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  const {data,error}=await createClient().from("organizations").insert({
-   name:name.trim(),slug,legal_name:legalName.trim()||null,vat_number:vatNumber.trim()||null,address:address.trim()||null,
-   phone:phone.trim()||null,website:website.trim()||null,contact_name:contactName.trim()||null,
-   billing_email:billingEmail.trim()||email.trim()||null,company_size:companySize,sector,
-   description:description.trim()||null,contact_email:email.trim()||null,status:"onboarding",
-  }).select("id").single();
-  if(error)setError(error.message);else{setName("");setEmail("");setDescription("");setLegalName("");setVatNumber("");setAddress("");setPhone("");setWebsite("");setContactName("");setBillingEmail("");setCompanySize("small");setSelectedOrganizationId(data.id);await load();}
-  setSaving(false);
+  try{
+   const response=await fetch("/api/admin/organizations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    name,legal_name:legalName,vat_number:vatNumber,address,phone,website,contact_name:contactName,billing_email:billingEmail,
+    company_size:companySize,sector,description,contact_email:email,
+   })});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Création de la société impossible.");
+   setName("");setEmail("");setDescription("");setLegalName("");setVatNumber("");setAddress("");setPhone("");setWebsite("");setContactName("");setBillingEmail("");setCompanySize("small");setSelectedOrganizationId(result.organization.id);await load();
+  }catch(cause){setError(cause instanceof Error?cause.message:"Création de la société impossible.");}
+  finally{setSaving(false);}
  }
  async function updateStatus(id:string,status:string){
-  const {error}=await createClient().from("organizations").update({status}).eq("id",id);
-  if(error)setError(error.message);else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
+  const response=await fetch("/api/admin/organizations",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,status})});
+  const result=await response.json();
+  if(!response.ok)setError(result.error??"Mise à jour impossible.");else setClients(items=>items.map(item=>item.id===id?{...item,status}:item));
  }
  async function inviteMember(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setInviteError("");setInviteMessage("");setInvitationUrl("");setInviting(true);
