@@ -62,11 +62,36 @@ export async function PATCH(request: Request) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Corps JSON invalide." }, { status: 400 }); }
   const id = String(body.id ?? "");
-  const status = String(body.status ?? "");
-  if (!id || !["onboarding", "active", "suspended", "terminated"].includes(status)) return NextResponse.json({ error: "Société ou statut invalide." }, { status: 400 });
+  const values = body.values && typeof body.values === "object" ? body.values as Record<string, unknown> : body;
+  const status = String(values.status ?? "");
+  if (!id) return NextResponse.json({ error: "Identifiant de société manquant." }, { status: 400 });
+  if (Object.prototype.hasOwnProperty.call(values, "status") && !["onboarding", "active", "suspended", "archived"].includes(status)) return NextResponse.json({ error: "Statut de société invalide." }, { status: 400 });
   const admin = createAdminClient();
-  const { error } = await admin.from("organizations").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
+  const allowed = ["name","legal_name","vat_number","address","phone","website","contact_name","billing_email","company_size","sector","description","contact_email","status","brand_color","enabled_modules"];
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const key of allowed) {
+    if (!Object.prototype.hasOwnProperty.call(values, key)) continue;
+    const value = values[key];
+    if (key === "status" && !["onboarding","active","suspended","archived"].includes(String(value))) return NextResponse.json({ error: "Statut de société invalide." }, { status: 400 });
+    if (key === "name" && String(value ?? "").trim().length < 2) return NextResponse.json({ error: "Le nom de la société doit contenir au moins 2 caractères." }, { status: 400 });
+    update[key] = typeof value === "string" && value.trim() === "" ? null : value;
+  }
+  if (typeof update.name === "string") {
+    const base = makeSlug(update.name) || "societe";
+    let slug = base;
+    for (let suffix = 2; suffix < 100; suffix++) {
+      const { data: exists, error: checkError } = await admin.from("organizations").select("id").eq("slug", slug).neq("id", id).maybeSingle();
+      if (checkError) return NextResponse.json({ error: "Vérification du nom impossible : " + checkError.message }, { status: 500 });
+      if (!exists) break;
+      slug = base + "-" + suffix;
+    }
+    update.slug = slug;
+  }
+  if (typeof update.brand_color === "string" && !/^#[0-9a-f]{6}$/i.test(update.brand_color)) delete update.brand_color;
+  if (Array.isArray(update.enabled_modules)) update.enabled_modules = update.enabled_modules.filter((item): item is string => typeof item === "string").slice(0, 20);
+  const { data, error } = await admin.from("organizations").update(update as never).eq("id", id).select("id").maybeSingle();
   if (error) return NextResponse.json({ error: "Mise à jour impossible : " + error.message }, { status: 400 });
-  await admin.from("audit_logs").insert({ actor_id: access.user.id, action: "organization_status_updated", entity_type: "organization", entity_id: id, details: { status } });
+  if (!data) return NextResponse.json({ error: "Société introuvable." }, { status: 404 });
+  await admin.from("audit_logs").insert({ actor_id: access.user.id, action: "organization_updated", entity_type: "organization", entity_id: id, details: update as never });
   return NextResponse.json({ success: true });
 }
