@@ -531,11 +531,15 @@ function StaffManagement(){
  useEffect(()=>{void load();},[load]);
  async function invite(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setSaving(true);setError("");setNotice("");setInviteLink("");
-  const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
-  const result=await response.json();
-  if(!response.ok)setError(result.error??"Invitation impossible.");
-  else{setInviteLink(result.inviteLink??"");setNotice(result.delivery==="email_sent"?"Invitation envoyée automatiquement par e-mail.":("Fiche employé créée. Copiez le lien pour le transmettre manuellement."+((result.emailError)?" "+result.emailError:"")));setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();}
-  setSaving(false);
+  try{
+   const response=await fetch("/api/admin/staff",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName,email,department,jobTitle,employeeNumber,permissions})});
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error??"Invitation impossible.");
+   setInviteLink(result.inviteLink??"");
+   setNotice(result.delivery==="email_sent"?"Invitation envoyée automatiquement par e-mail.":"Fiche employé créée. Copiez le lien pour le transmettre manuellement."+((result.emailError)?" "+result.emailError:""));
+   setFormOpen(false);setFullName("");setEmail("");setEmployeeNumber("");await load();
+  }catch(cause){setError(cause instanceof Error?cause.message:"Invitation impossible.");}
+  finally{setSaving(false);}
  }
  async function updateStatus(member:StaffRecord,status:StaffRecord["employment_status"]){
   const response=await fetch("/api/admin/staff",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:member.id,status})});
