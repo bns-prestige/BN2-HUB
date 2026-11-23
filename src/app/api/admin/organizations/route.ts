@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     phone: clean("phone"), website: clean("website"), contact_name: clean("contact_name"),
     billing_email: clean("billing_email") ?? clean("contact_email"), company_size: clean("company_size"),
     sector: clean("sector"), description: clean("description"), contact_email: clean("contact_email"),
-    status: "onboarding",
+    status: "onboarding", brand_color: /^#[0-9a-f]{6}$/i.test(String(body.brand_color ?? "")) ? String(body.brand_color) : "#1686d9", enabled_modules: Array.isArray(body.enabled_modules) ? body.enabled_modules.filter((item): item is string => typeof item === "string").slice(0, 20) : ["dashboard", "support", "equipment", "documents", "team"],
   };
   const { data, error } = await admin.from("organizations").insert(payload).select(selectFields).single();
   if (error) return NextResponse.json({ error: "Création de la société impossible : " + error.message }, { status: 400 });
