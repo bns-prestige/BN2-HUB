@@ -62,10 +62,11 @@ export async function PATCH(request: Request) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Corps JSON invalide." }, { status: 400 }); }
   const id = String(body.id ?? "");
-  const status = String(body.status ?? "");
-  if (!id || !["onboarding", "active", "suspended", "archived"].includes(status)) return NextResponse.json({ error: "Société ou statut invalide." }, { status: 400 });
-  const admin = createAdminClient();
   const values = body.values && typeof body.values === "object" ? body.values as Record<string, unknown> : body;
+  const status = String(values.status ?? "");
+  if (!id) return NextResponse.json({ error: "Identifiant de société manquant." }, { status: 400 });
+  if (Object.prototype.hasOwnProperty.call(values, "status") && !["onboarding", "active", "suspended", "archived"].includes(status)) return NextResponse.json({ error: "Statut de société invalide." }, { status: 400 });
+  const admin = createAdminClient();
   const allowed = ["name","legal_name","vat_number","address","phone","website","contact_name","billing_email","company_size","sector","description","contact_email","status","brand_color","enabled_modules"];
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const key of allowed) {
