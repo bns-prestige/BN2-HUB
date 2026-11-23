@@ -182,16 +182,7 @@ function ClientPortalControl() {
  async function inviteMember(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();setInviteError("");setInviteMessage("");setInvitationUrl("");setInviting(true);
   try{
-   const supabase=createClient();
-   const {data:{session}}=await supabase.auth.getSession();
-   if(!session)throw new Error("Session expirée. Reconnectez-vous.");
-   const apiKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-   if(!apiKey)throw new Error("Clé publique Supabase manquante.");
-   const response=await fetch("https://almzypjgccucdkwnpldy.supabase.co/functions/v1/bn2-invite-member",{
-    method:"POST",
-    headers:{Authorization:"Bearer "+session.access_token,apikey:apiKey,"Content-Type":"application/json"},
-    body:JSON.stringify({email:memberEmail,fullName:memberName,organizationId:selectedOrganizationId,memberRole}),
-   });
+   const response=await fetch("/api/admin/organization-members",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:memberEmail,fullName:memberName,organizationId:selectedOrganizationId,memberRole})});
    const result=await response.json();
    if(!response.ok)throw new Error(result.error??"Invitation impossible.");
    const mailResponse=await fetch("/api/admin/send-invite-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:memberEmail,fullName:memberName,organization:result.organization,actionLink:result.actionLink??"",existingAccount:result.existingAccount===true})});
