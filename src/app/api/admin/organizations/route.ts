@@ -89,9 +89,9 @@ export async function PATCH(request: Request) {
   }
   if (typeof update.brand_color === "string" && !/^#[0-9a-f]{6}$/i.test(update.brand_color)) delete update.brand_color;
   if (Array.isArray(update.enabled_modules)) update.enabled_modules = update.enabled_modules.filter((item): item is string => typeof item === "string").slice(0, 20);
-  const { data, error } = await admin.from("organizations").update(update).eq("id", id).select("id").maybeSingle();
+  const { data, error } = await admin.from("organizations").update(update as never).eq("id", id).select("id").maybeSingle();
   if (error) return NextResponse.json({ error: "Mise à jour impossible : " + error.message }, { status: 400 });
   if (!data) return NextResponse.json({ error: "Société introuvable." }, { status: 404 });
-  await admin.from("audit_logs").insert({ actor_id: access.user.id, action: "organization_updated", entity_type: "organization", entity_id: id, details: update });
+  await admin.from("audit_logs").insert({ actor_id: access.user.id, action: "organization_updated", entity_type: "organization", entity_id: id, details: update as never });
   return NextResponse.json({ success: true });
 }
