@@ -428,16 +428,9 @@ function LiveModuleSection({active}:{active:string}) {
    });
    if(insertError){await supabase.storage.from("bn2-private").remove([path]);setError(insertError.message);setSaving(false);return;}
   }else{
-   payload.updated_at=new Date().toISOString();
-   if(current.table==="interventions"&&!editingId)payload.created_by=user.id;
-   const dynamicTable = supabase.from(current.table as never) as unknown as {
-    update:(values:Record<string,unknown>)=>{eq:(column:string,value:string)=>Promise<{error:{message:string}|null}>};
-    insert:(values:Record<string,unknown>)=>Promise<{error:{message:string}|null}>;
-   };
-   const result=editingId
-    ? await dynamicTable.update(payload).eq("id",editingId)
-    : await dynamicTable.insert(payload);
-   if(result.error){setError(result.error.message);setSaving(false);return;}
+   const response=await fetch("/api/admin/records",{method:editingId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({table:current.table,id:editingId||undefined,values:payload})});
+   const result=await response.json();
+   if(!response.ok){setError(result.error??"Enregistrement impossible.");setSaving(false);return;}
   }
   setNotice(editingId?"Enregistrement mis à jour.":"Enregistrement créé.");
   setFormOpen(false);setEditingId("");setDocumentFile(null);
